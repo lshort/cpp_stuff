@@ -43,12 +43,16 @@ public:
   dist( dst_units u, double d ) : units(u),distance(d) {};
   double get_dist( dst_units u ) const { return distance*conversion(units, u); };
   void set_dist( dst_units u, double d )  { units = u; distance = d; };
-  bool is_greater ( const dist &  other_distance ) const  {
-    return double_greater(distance, other_distance.get_dist(units)); };
-private:
+  //  bool is_greater ( const dist &  other_distance ) const  {
+  //    return double_greater(distance, other_distance.get_dist(units)); };
   static double conversion( dst_units from, dst_units to );
+private:
   dst_units units;
   double    distance;
+};
+
+bool is_greater( const dist & a, const dist & b )  {
+  return double_greater( a.get_dist(dist::CM), b.get_dist(dist::CM) );
 };
 
 constexpr static double ft = 2.54*12.0;
@@ -67,41 +71,23 @@ double dist::conversion( dst_units from, dst_units to )
 
 
 //  *** instances represent a car, within the context of a parking lot
-//  no setters, so this is immutable once constructed
+//  _for our purposes here_, this can be a POD struct, so it is
 //
-class car {
-public:
-  car( const dist & wid, const dist & len, const dist & hgt, const string& lic_no )
-    : w(wid), l(len), h(hgt), license_plate(lic_no) { };
-  dist get_width() const { return w; };
-  dist get_length() const { return l; };
-  dist get_height() const { return h; };
-  string get_license() const { return license_plate; };
-private:
-  dist w, l, h;
+struct car {
+  dist width, length, height;
   string license_plate;
 };
 
 //  *** instances represent a single uncovered parking space
+//  also POD, for our purposes here
 //
-class parking_space {
-public:
-  parking_space( const dist & wid, const dist & len, char rw, unsigned int no )
-    : w(wid), l(len), row(rw), number(no) { occupant = optional<car>(); };
-  dist get_width() const { return w; };
-  dist get_length() const { return l; };
-  optional<car> get_occupant() const { return occupant; };
-  bool empty() const { return !occupant; };
-  char get_row() const { return row; };
-  unsigned int get_number() const { return number; };
-  void set_occupant( const optional<car>& vehicle ) { occupant = vehicle; };
-private:
-  dist w, l;
-  optional<car> occupant;
-  char  row;
+struct parking_space {
+  dist width, length;    // uncovered, so no height
+  char row;
   unsigned int number;
+  optional<car> occupant;
 };
-
+const optional<car> no_car = optional<car>();
 
 //  *** instances represent a single-level parking lot
 //
@@ -144,25 +130,25 @@ void parking_lot::add_to_row(const dist& w, const dist& l, char row,
     mypair = spaces_by_row.find(row);
   }
   vector<parking_space>& vec = get<1>(*mypair);
-  for (int i=first; i<first+count; ++i)  {
-    vec.push_back( parking_space( w, l, row, i ) ); 
+  for (unsigned int i=first; i<first+count; ++i)  {
+    vec.push_back( parking_space{ w, l, row, i, no_car } ); 
     available_spaces.push_back( make_pair(&vec,vec.size()-1) );
   }
 }
 
 bool parking_lot::park_car( const car & veh )
 {
-  dist  l = veh.get_length();
-  dist  w = veh.get_width();
+  dist  l = veh.length;
+  dist  w = veh.width;
   auto spaceref = find_if( available_spaces.begin(), available_spaces.end(), 
              [&l,&w, this] (parking_space_ref ref)  {
              parking_space &p = get_space(ref);
-             return (   p.get_length().is_greater(l)
-                     && p.get_width().is_greater(w)  ); });
+             return (   is_greater(p.length,l)
+                     && is_greater(p.width,w)  ); });
   if ( available_spaces.end() != spaceref ) {
     auto & space = get_space( *spaceref );
-    space.set_occupant(optional<car>(veh));
-    license_plate_map[veh.get_license()] = *spaceref;
+    space.occupant = optional<car>(veh);
+    license_plate_map[veh.license_plate] = *spaceref;
     available_spaces.erase(spaceref);
     return true;
   } else {
@@ -178,7 +164,7 @@ bool parking_lot::remove_car( const string & license )
     return false;
   }
   parking_space &space = get_space(get<1>(*entry));
-  space.set_occupant(optional<car>());
+  space.occupant = no_car;
   license_plate_map.erase(license);
   available_spaces.push_back(get<1>(*entry));
   return true;
@@ -191,9 +177,12 @@ void parking_lot::print_report() const
   for ( auto& mypair : spaces_by_row ) {
     cout << "  Row " << get<0>(mypair) << endl;
     for ( auto& space : get<1>(mypair) )  {
-      cout << "    Space " << space.get_number() << " : ";
-      cout << (space.empty() ? "empty" : space.get_occupant().get().get_license());
-      cout << endl;
+      cout << "    Space " << space.number << " : ";
+      if ( !space.occupant )  {
+        cout << "empty" << endl;
+      }  else  {
+        cout << space.occupant.get().license_plate << endl;
+      }
     }
   }
   cout << endl;
@@ -205,10 +194,10 @@ optional<car> parking_lot::find_occupant( char row, unsigned int no ) const
   if ( spaces_by_row.end() != mypair )  {
     const vector<parking_space>& vec = get<1>(*mypair);
     for (auto& space : vec)  
-      if ( space.get_number() == no )
-        return space.get_occupant();
+      if ( space.number == no )
+        return space.occupant;
   }
-  return optional<car>();
+  return no_car;
 }
 
 
@@ -221,10 +210,10 @@ int main() {
   dist l2(dist::FOOT, 19.0);
   dist w3(dist::METER, 2.7);
   dist l3(dist::FOOT, 21.0);
-  car c1( w1, l2, w1, string("PINOTNV") );
-  car c2( w3, l2, w2, string("133ABD") );
-  car c3( w1, l1, w1, string("166ABC") );
-  car c4( w1, l2, w1, string("CU LTR") );
+  car c1{ w1, l2, w1, string("PINOTNV") };
+  car c2{ w3, l2, w2, string("133ABD") };
+  car c3{ w1, l1, w1, string("166ABC") };
+  car c4{ w1, l2, w1, string("CU LTR") };
 
   p.add_space( w1, l1, 'A', 1 );
   p.add_space( w1, l1, 'A', 2 );
