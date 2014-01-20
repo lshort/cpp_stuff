@@ -1,3 +1,6 @@
+#include <stdexcept>
+#include <memory>
+#include <ostream>
 #include <iostream>
 #include <vector>
 #include <deque>
@@ -5,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 #include <boost/optional/optional.hpp>
+//#include <numeric_limits>
 
 using namespace std;
 using boost::optional;
@@ -16,15 +20,18 @@ using boost::optional;
 //  First, some functions to compare IEEE double precision numbers
 //
 
-//  IEEE double has 52 bits of mantissa.  This gives 15 digits.  
-//  Don't see any constants in math.h that specify this.
-const int MAX_DBL_SIG_FIG=15;
+const int MAX_DBL_SIG_FIG = numeric_limits<double>::digits - 1;
 
+/**  Compares two IEEE double values for equality, to a specific
+     number of significant figures
+     @param[in] a the first comparison value
+     @param[in] b the second comparison value
+     @return true if the two values are equal, or very close to it */
 bool double_equal( double a, double b, 
                    unsigned int sig_figs = MAX_DBL_SIG_FIG )  
 {
   int exponent = -min( (unsigned int)MAX_DBL_SIG_FIG, sig_figs );
-  double allowable_delta = a * pow( 10.0d, exponent );
+  double allowable_delta = a * pow( 10.0, exponent );
   return ( abs(a-b) < allowable_delta );
 }
 
@@ -43,7 +50,7 @@ public:
   dist( dst_units u, double d ) : units(u),distance(d) {};
   double get_dist( dst_units u ) const { return distance*conversion(units, u); };
   void set_dist( dst_units u, double d )  { units = u; distance = d; };
-  //  bool is_greater ( const dist &  other_distance ) const  {
+  //  bool is_greater ( const dist  &other_distance ) const  {
   //    return double_greater(distance, other_distance.get_dist(units)); };
   static double conversion( dst_units from, dst_units to );
 private:
@@ -51,7 +58,7 @@ private:
   double    distance;
 };
 
-bool is_greater( const dist & a, const dist & b )  {
+bool is_greater( const dist &a, const dist &b )  {
   return double_greater( a.get_dist(dist::CM), b.get_dist(dist::CM) );
 };
 
@@ -89,39 +96,118 @@ struct parking_space {
 };
 const optional<car> no_car = optional<car>();
 
-//  *** instances represent a single-level parking lot
-//
+///  instances represent a single-level parking lot
+///
 class parking_lot {
 public:
   parking_lot() {};
-  void add_space( const dist& w, const dist& l, char row, unsigned int no );
-  void add_to_row( const dist& w, const dist& l, char row,   // add multiple
-                   unsigned int first, unsigned int count ); // spaces
-  bool park_car( const car & veh );
-  bool remove_car( const string & license );
-  parking_space find_car( const string & license ) const;
+  parking_lot(const parking_lot &orig);   // make a deep copy
+  parking_lot(const parking_lot &&orig) ;
+  friend void swap( parking_lot& first, parking_lot& second );
+  parking_lot &operator = (parking_lot orig);
+  void add_space( const dist &w, const dist &l, 
+                  const char row, const unsigned int no );
+  void add_to_row( const dist &w, const dist &l, const char row,   // add multiple
+                   const unsigned int first, const unsigned int count ); // spaces
+  bool park_car( const car &veh );
+  bool remove_car( const string &license );
+  optional<parking_space> find_car( const string &license ) const;
   optional<car> find_occupant( char row, unsigned int no ) const;
-  void print_report() const;
+  void print_report(ostream &out) const;
 private:
   // stores all the parking spaces in a single row
   typedef map<char, vector<parking_space>> row_data;
   row_data spaces_by_row;
   // parking_space_ref allows us to efficiently point to entries in
-  // the vector of row_data.  we can't use a direct pointer, because
-  // the vector could be reallocated and moved 
+  // the vector of row_data.  we can't use a direct pointer to the
+  // individual parking_spaces, the vector could be reallocated and
+  // moved  and then the individual pointers would be invalid
   typedef pair<vector<parking_space>*,int> parking_space_ref;
   unordered_map<string, parking_space_ref>  license_plate_map;
   deque<parking_space_ref> available_spaces;
-  static parking_space & get_space( parking_space_ref r ) 
+  static parking_space &get_space( const parking_space_ref &r ) 
     { return  (*get<0>(r))[get<1>(r)]; };
+  parking_space_ref copy_ref( const parking_space_ref &r );
 };
 
-void parking_lot::add_space(const dist& w, const dist& l, char row, unsigned int no )
+/**  Print out the argument to the specified ostream
+     @param[in] p The parking_space to print */
+ostream & operator << (ostream & out, const parking_lot &p ) {
+  p.print_report(out);
+  return out;
+}
+
+
+/** A function to swap two parking_lot objects
+    @param[in,out] first The first parking_lot to swap
+    @param[in,out] second The second parking lot to swap */
+void swap( parking_lot& first, parking_lot& second ) {
+  std::swap( first.spaces_by_row, second.spaces_by_row );
+  std::swap( first.license_plate_map, second.license_plate_map );
+  std::swap( first.available_spaces, second.available_spaces );
+}
+
+/** The move constructor
+    @param[in] orig The parking_lot which is assigned from */
+parking_lot::parking_lot(const parking_lot &&orig) {
+  spaces_by_row     = move(orig.spaces_by_row);
+  license_plate_map = move(orig.license_plate_map);
+  available_spaces  = move(orig.available_spaces);
+}
+
+/** The parameter 'r' points to a parking_space_ref in a different 
+    parking_lot.  We build and return a parking_space_ref in our own
+    parking_lot that points to the parking_space that has the same 
+    row and number as 'r' points to.  Needed for the copy constructor. 
+    @param[in] r The reference that we are copying
+    @return The reference that we have built  */
+parking_lot::parking_space_ref parking_lot::copy_ref( const parking_space_ref &r ) {
+  vector<parking_space> *oldvec = get<0>(r);
+  int index = get<1>(r);
+  parking_space &space = (*oldvec)[index];  
+  vector<parking_space> *newvec = &spaces_by_row[space.row];
+  return make_pair( newvec, index );
+}
+
+/** The copy constructor, makes a deep copy
+    @param[in] orig The parking_lot which is assigned from */
+parking_lot::parking_lot(const parking_lot &orig) {
+  // get our own copy of the map and vectors of data it contains
+  spaces_by_row = orig.spaces_by_row;  
+  for ( auto &entry : orig.license_plate_map )  {
+    parking_space_ref spaceref = get<1>(entry);
+    license_plate_map[get<0>(entry)] = copy_ref( spaceref );
+  }
+  for ( auto &spaceref : orig.available_spaces ) {
+    available_spaces.push_back(copy_ref(spaceref));
+  }
+}
+
+/** The assignment operator
+    @param[in] orig The parking_lot which is assigned from
+    @return Returns the value to be assigned */
+parking_lot &parking_lot::operator = (parking_lot orig) {
+  swap(*this, orig);
+  return *this;
+}
+
+/** Adds a single space to the row
+    @param[in] w The width of the parking space
+    @param[in] l The length of the parking space
+    @param[in] row The row's identifying letter
+    @param[in] no The number of the parking space */
+void parking_lot::add_space(const dist &w, const dist &l, char row, unsigned int no )
 {
   add_to_row( w, l, row, no, 1 ); 
 }
 
-void parking_lot::add_to_row(const dist& w, const dist& l, char row, 
+/** Adds several parking spaces to the row, numbering them sequentially
+    @param[in] w The width of the parking spaces
+    @param[in] l The length of the parking spaces
+    @param[in] row The row's identifying letter
+    @param[in] first The number of the first parking space
+    @param[in] count The number of parking spaces to add   */
+void parking_lot::add_to_row(const dist &w, const dist &l, char row, 
                              unsigned int first, unsigned int count )
 {
   auto mypair = spaces_by_row.find(row);
@@ -129,14 +215,17 @@ void parking_lot::add_to_row(const dist& w, const dist& l, char row,
     spaces_by_row[row] = vector<parking_space>();
     mypair = spaces_by_row.find(row);
   }
-  vector<parking_space>& vec = get<1>(*mypair);
+  vector<parking_space> &vec = get<1>(*mypair);
   for (unsigned int i=first; i<first+count; ++i)  {
     vec.push_back( parking_space{ w, l, row, i, no_car } ); 
     available_spaces.push_back( make_pair(&vec,vec.size()-1) );
   }
 }
 
-bool parking_lot::park_car( const car & veh )
+/** Parks the car in an appropriately sized parking space
+    @param[in] veh The car
+    @return Returns false if no space was available, true otherwise */
+bool parking_lot::park_car( const car &veh )
 {
   dist  l = veh.length;
   dist  w = veh.width;
@@ -146,7 +235,7 @@ bool parking_lot::park_car( const car & veh )
              return (   is_greater(p.length,l)
                      && is_greater(p.width,w)  ); });
   if ( available_spaces.end() != spaceref ) {
-    auto & space = get_space( *spaceref );
+    auto &space = get_space( *spaceref );
     space.occupant = optional<car>(veh);
     license_plate_map[veh.license_plate] = *spaceref;
     available_spaces.erase(spaceref);
@@ -156,8 +245,10 @@ bool parking_lot::park_car( const car & veh )
   }
 }
 
-
-bool parking_lot::remove_car( const string & license )  
+/** Removes the car with the specified license plate
+    @param[in] license The license plate to search for
+    @return Returns true if it found a matching car, false otherwise */
+bool parking_lot::remove_car( const string &license )  
 {
   auto entry = license_plate_map.find(license);
   if ( entry == license_plate_map.end() )  {
@@ -170,34 +261,55 @@ bool parking_lot::remove_car( const string & license )
   return true;
 }
 
-
-void parking_lot::print_report() const
+/** Prints a report 
+    @param[in] out The stream to print the report to */
+void parking_lot::print_report(ostream &out) const
 {
-  cout << endl << endl << "Parking Lot Report" << endl;
-  for ( auto& mypair : spaces_by_row ) {
-    cout << "  Row " << get<0>(mypair) << endl;
-    for ( auto& space : get<1>(mypair) )  {
-      cout << "    Space " << space.number << " : ";
+  out << endl << endl << "Parking Lot Report" << endl;
+  for ( auto &mypair : spaces_by_row ) {
+    out << "  Row " << get<0>(mypair) << endl;
+    for ( auto &space : get<1>(mypair) )  {
+      out << "    Space " << space.number << " : ";
       if ( !space.occupant )  {
-        cout << "empty" << endl;
+        out << "empty" << endl;
       }  else  {
-        cout << space.occupant.get().license_plate << endl;
+        out << space.occupant.get().license_plate << endl;
       }
     }
   }
-  cout << endl;
+  out << endl;
 }
 
+/**  Find the car the occupies a specific parking space
+     @param[in] row  The row of the parking space
+     @param[in] no   The number of the parking space  
+     @return If not found -- the empty object 
+     @return If found -- the car data */
 optional<car> parking_lot::find_occupant( char row, unsigned int no ) const
 {
   auto mypair = spaces_by_row.find(row);
   if ( spaces_by_row.end() != mypair )  {
-    const vector<parking_space>& vec = get<1>(*mypair);
-    for (auto& space : vec)  
+    const vector<parking_space> &vec = get<1>(*mypair);
+    for (auto &space : vec)  
       if ( space.number == no )
         return space.occupant;
   }
   return no_car;
+}
+
+/**  Find a car with the specified license plate
+     @param [in] license The license plate to find 
+     @return If not found -- the empty object
+     @return If found -- the parking space data */
+optional<parking_space> parking_lot::find_car( const string &license ) const {
+  try {
+    const parking_space_ref &ref = license_plate_map.at(license);
+    vector<parking_space> *vec = get<0>(ref);
+    int index = get<1>(ref);
+    return optional<parking_space>((*vec)[index]);  
+  } catch (const std::out_of_range & out) {
+    return optional<parking_space>();
+  }
 }
 
 
@@ -225,7 +337,9 @@ int main() {
   cout << "Park 3 " <<  p.park_car(c3) << endl;
   p.park_car(c4);
 
-  p.print_report();
+  cout << p;
   p.remove_car( "PINOTNV" );
-  p.print_report();
+  cout << p;
+  p.find_car("CU LTR");
+  p.find_occupant('C',12);
 }
