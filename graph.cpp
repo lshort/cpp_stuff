@@ -26,17 +26,22 @@ private:
 };
 
 class edge {
-    edge( const vertex &from, const vertex &to) : _from(from), _to(to) {};
+    edge( const vertex &from, const vertex &to, int wgt)
+        : _from(from), _to(to), _weigh(wgt) {};
     const vertex &getFrom() { return _from; };
     const vertex &getTo() { return _to; };
+    int getWgt { return _weight; };
 private:
     const vertex &_from, &_to;
+    int _weight;
 };
 
 
 class digraph {
 public:
-
+    digraph( const vector<string> &vertices,
+             const vector<tuple<string,string,int>> & edges );
 private:
-
+    vector<string> _vertices;
+    map<string,vector<pair<string,int>> _adj_lists;
 };
