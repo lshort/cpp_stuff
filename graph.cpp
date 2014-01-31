@@ -2,8 +2,10 @@
 ///   some graph algorithms
 
 #include <string>
+#include <unordered_map>
 
 using std::string;
+using std::unordered_map;
 
 struct node;
 
@@ -43,5 +45,5 @@ public:
              const vector<tuple<string,string,int>> & edges );
 private:
     vector<string> _vertices;
-    map<string,vector<pair<string,int>> _adj_lists;
+    unordered_map<string,vector<pair<string,int>> _adj_lists;
 };
