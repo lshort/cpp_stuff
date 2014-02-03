@@ -60,16 +60,17 @@ int index_in( char* name, char** list, int list_size )  {
 };
 
 void breadth_first( struct digraph *d, char* vertex ) {
-    char **V = malloc( d->vertex_count * sizeof(char*));
+    int vertex_size = d->vertex_count;
+    char **V = malloc( vertex_size * sizeof(char*));
     int v_size = 0;
-    char **Q = malloc( d->vertex_count * sizeof(char*));
+    char **Q = malloc( vertex_size * sizeof(char*));
     int q_first = 0;
     int q_last = 0;
     Q[0] = vertex;
     while ( q_first >= q_last ) {
         V[v_size++] = Q[q_first];
         printf( "visiting %s\n", V[v_size-1]);
-        int idx = index_in( Q[q_first], d->vertices, d->vertex_count);
+        int idx = index_in( Q[q_first], d->vertices, vertex_size);
         ++q_first;
         for ( int j=0; j<d->edge_count[idx]; ++j )  {
             char *to = d->adj_list[idx][j].to;
