@@ -7,7 +7,6 @@
 #include <strings.h>
 #include <stdbool.h>
 
-struct node;
 
 typedef char nodename;
 
