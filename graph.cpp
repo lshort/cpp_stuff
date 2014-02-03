@@ -3,47 +3,97 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
+#include <utility>
+#include <set>
+#include <deque>
+#include <iostream>
+#include <stack>
 
-using std::string;
-using std::unordered_map;
+using namespace std;
 
-struct node;
+typedef char nodename;
 
-struct node_list {
-    node *data;
-    node_list *next;
-};
-
-
-struct node  {
-    node_list* connections;
-    string name;
-};
-
-class vertex {
-    vertex( string name ) : _name(name) {};
-    const string & getName() { return _name; };
-private:
-    string _name;
-};
-
-class edge {
-    edge( const vertex &from, const vertex &to, int wgt)
-        : _from(from), _to(to), _weigh(wgt) {};
-    const vertex &getFrom() { return _from; };
-    const vertex &getTo() { return _to; };
-    int getWgt { return _weight; };
-private:
-    const vertex &_from, &_to;
-    int _weight;
+struct edge {
+    nodename from;
+    nodename to;
+    int weight;
 };
 
 
 class digraph {
 public:
-    digraph( const vector<string> &vertices,
-             const vector<tuple<string,string,int>> & edges );
+    digraph( const set<nodename> &vertices,
+             const vector<edge> & edges );
+    void bfs( nodename vertex );
+    void dfs( nodename vertex );
 private:
-    vector<string> _vertices;
-    unordered_map<string,vector<pair<string,int>> _adj_lists;
+    set<nodename> _vertices;
+    unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
 };
+
+digraph::digraph(const set<nodename> &vertices,
+                 const vector<edge> & edges ) : _vertices(vertices)
+{
+    for ( auto &e : edges )  {
+        if ( vertices.end() != vertices.find(e.from)) {
+            _adj_lists[e.from].push_back(make_pair(e.to,e.weight));
+        }
+    }
+};
+
+void digraph::dfs( nodename vertex )
+{
+    set<nodename> V;
+    stack<nodename> S;
+    S.push(vertex);
+    while ( !S.empty() )  {
+        nodename top = S.top();
+        S.pop();
+        if ( V.end() == V.find(top))  {
+            V.insert(top);
+            cout << "DFS Visiting " << top << endl;
+            for ( auto &p : _adj_lists[top] )  {
+                S.push(get<0>(p));
+            }
+        }
+    }
+};
+
+void digraph::bfs( nodename vertex )
+{
+    set<nodename> V;
+    deque<nodename> Q;
+    Q.push_back(vertex);
+    V.insert(vertex);
+    while (!Q.empty()) {
+        nodename v = Q.front();
+        Q.pop_front();
+        cout << "BFS Visiting " << v << endl;
+        for ( auto &p : _adj_lists[v] )  {
+            nodename to = get<0>(p);
+            if ( V.end() == V.find(to)) {
+                V.insert(to);
+                Q.push_back(to);
+            }
+        }
+    }
+}
+
+struct edge eds[] = { {'A','B',2},{'A','E',1}
+                           , {'B','C',3},{'B','A',2}
+                           , {'C','C',1},{'C','D',2}
+                           , {'D','E',0}
+                           , {'E','D',0},{'E','B',2} };
+
+char verts[] = "ABCDE";
+
+int main( int argc, char *argv[] )
+{
+    digraph x(set<nodename>(verts,verts+5),vector<edge>(eds,eds+9));
+    x.bfs('A');
+    cout << endl;
+    x.dfs('A');
+
+    return 0;
+}
