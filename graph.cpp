@@ -9,6 +9,8 @@
 #include <deque>
 #include <iostream>
 #include <stack>
+#include <numeric_limits>
+#include <boost/heap/priority_queue>
 
 using namespace std;
 
@@ -27,6 +29,7 @@ public:
              const vector<edge> & edges );
     void bfs( nodename vertex );
     void dfs( nodename vertex );
+    vector<nodename> dijkstra( nodename origin, nodename destination);
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
@@ -78,7 +81,36 @@ void digraph::bfs( nodename vertex )
             }
         }
     }
-}
+};
+
+vector<nodename> digraph::dijkstra( nodename origin, nodename destination)
+{
+    set<nodename> V;
+    typedef pair<nodename,int> pq_entry;
+    deque<pq_entry> PQ;
+    for ( auto &v : _vertices )
+        PQ.insert(make_pair(v,? v==origin : 0 : numeric_limits<int>::max));
+    while (!PQ.empty()) {
+        sort( PQ.begin(), PQ.end()
+              [] (const pq_entry &a, const pq_entry &b)
+              { return get<1>(a) < get<1>(b);  }
+              );
+        nodename v = get<0>(PQ.front());
+        int dist = get<1>(PQ.front());
+        PQ.pop_front();
+        V.add(v);
+        for ( auto &e : _adj_lists[v] )  {
+            nodename to = get<0>(e);
+            cost = get<1>(e);
+            crnt_cost =
+if ( cost+dist <  )}
+
+    }
+
+
+};
+
+
 
 struct edge eds[] = { {'A','B',2},{'A','E',1}
                            , {'B','C',3},{'B','A',2}
