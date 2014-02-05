@@ -28,7 +28,7 @@ struct edge {
 };
 
 
-/** Instances represent a directed graph    */
+/** Instances represent a directed graph; immutable once constructed    */
 class digraph {
 public:
     digraph( const set<nodename> &vertices,
