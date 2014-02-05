@@ -9,12 +9,15 @@
 #include <deque>
 #include <iostream>
 #include <stack>
-#include <numeric_limits>
-#include <boost/heap/fibonacci_heap>
+#include <limits>
+#include <map>
+#include <deque>
+#include <boost/heap/fibonacci_heap.hpp>
 
 using namespace std;
 
 typedef char nodename;
+constexpr nodename no_node = 0;
 
 struct edge {
     nodename from;
@@ -29,7 +32,7 @@ public:
              const vector<edge> & edges );
     void bfs( nodename vertex );
     void dfs( nodename vertex );
-    vector<nodename> dijkstra( nodename origin, nodename destination);
+    deque<nodename> dijkstra( nodename origin, nodename destination);
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
@@ -83,38 +86,58 @@ void digraph::bfs( nodename vertex )
     }
 };
 
-typedef pair<nodename,int> pq_entry;
-struct greater : public binary_function<pq_entry, pq_entry, bool> {
-    bool operator(const pq_entry &a, const pq_entry &b) const
-    { return get<1>(a) > get<1>(b); }
+
+struct heap_data {
+    pair<nodename,int> pq_data;
+    heap_data(pair<nodename,int> data) : pq_data(data) {};
+    bool operator<(const heap_data &b) const
+        { return get<1>(pq_data) < get<1>(b.pq_data); };
 };
 
-vector<nodename> digraph::dijkstra( nodename origin, nodename destination)
+deque<nodename> digraph::dijkstra( nodename origin, nodename destination)
 {
     set<nodename> V;
-    boost::fibonacci_heap<pq_entry, greater> PQ;
-    typedef boost::fibonacci_heap<pq_entry, greater>::handle_type handle;
+    boost::heap::fibonacci_heap<heap_data> PQ;
+    typedef boost::heap::fibonacci_heap<heap_data>::handle_type handle;
     map<nodename,handle> handles;
+    map<nodename,nodename> previous;
+    int inf = numeric_limits<int>::min();  // fib_heap is a max-heap, so use min
     for ( auto &v : _vertices ) {
-        int cost = ? v==origin : 0 : numeric_limits<int>::min;
+        int cost = (v==origin ? 0 : inf);
         handles[v] = PQ.push(make_pair(v, cost));
+        previous[v] = no_node;
     }
-    while (!PQ.empty()) {
-        nodename v = get<0>(PQ.top));
-        int dist = get<1>(PQ.top());
-        PQ.pop_front();
-        V.add(v);
+    while (!PQ.empty() && V.end()==V.find(destination) )  {
+        nodename v = get<0>(PQ.top().pq_data);
+        int dist = get<1>(PQ.top().pq_data);
+        PQ.pop();
+        V.insert(v);
+        if ( dist == inf )
+            break;
         for ( auto &e : _adj_lists[v] )  {
             nodename to = get<0>(e);
             int cost = get<1>(e);
-            if ( cost+dist < get<1>(*handles[to]) ) {
-                get<0>(*handles[to]) = cost+dist;
-                PQ.increase( );
+            handle myhand = handles[to];
+            if ( dist-cost > get<1>((*myhand).pq_data) ) {
+                get<1>((*myhand).pq_data) = dist-cost;
+                PQ.increase(myhand, *myhand );
+                previous[to] = v;
             }
         }
     }
-
-
+    deque<nodename> rval;
+    if ( previous[destination] != no_node) {
+        nodename crnt = destination;
+        while (crnt != origin) {
+            rval.push_front(crnt);
+            crnt = previous[crnt];
+        }
+        rval.push_front(crnt);
+    }
+    cout << endl;
+    for_each( rval.begin(), rval.end(), [] (nodename v) { cout << v << " ";}  );
+    cout << endl << endl;
+    return rval;
 };
 
 
@@ -123,7 +146,7 @@ struct edge eds[] = { {'A','B',2},{'A','E',1}
                            , {'B','C',3},{'B','A',2}
                            , {'C','C',1},{'C','D',2}
                            , {'D','E',0}
-                           , {'E','D',0},{'E','B',2} };
+                           , {'E','D',1},{'E','B',2} };
 
 char verts[] = "ABCDE";
 
@@ -133,6 +156,7 @@ int main( int argc, char *argv[] )
     x.bfs('A');
     cout << endl;
     x.dfs('A');
+    x.dijkstra('A','D');
 
     return 0;
 }
