@@ -1,4 +1,4 @@
-/// graph.cpp
+/// graph_c.c
 ///   some graph algorithms
 
 #include <malloc.h>
@@ -16,7 +16,7 @@ struct edge {
     int weight;
 };
 
-struct digraph {
+struct digraph_c {
     nodename *vertices;
     struct edge **adj_list;
     int  *edge_count;
@@ -32,7 +32,7 @@ struct edge edges_1e[] = { {'E','D',0},{'E','B',2} };
 
 // caller is responsible for freeing vertices and adj_list
 // return value is the size of the vertex list
-void build_a(struct digraph *d) {
+void build_a(struct digraph_c *d) {
     d->vertex_count = 5;
     d->vertices = calloc((size_t) d->vertex_count, sizeof(nodename));
     d->adj_list = calloc((size_t) d->vertex_count, sizeof(struct edge*));
@@ -55,7 +55,7 @@ void build_a(struct digraph *d) {
 };
 
 
-void cleanup( struct digraph d ) {
+void cleanup( struct digraph_c d ) {
     free(d.vertices);
     free(d.adj_list);
     d.vertices = NULL;
@@ -71,7 +71,7 @@ int index_in( nodename name, nodename* list, int list_size )  {
     return -1;
 };
 
-void breadth_first( struct digraph *d, nodename vertex ) {
+void breadth_first( struct digraph_c *d, nodename vertex ) {
     int vertex_size = d->vertex_count;
     nodename *V = calloc( (size_t)vertex_size, sizeof(nodename));
     V[0] = vertex;
@@ -98,7 +98,7 @@ void breadth_first( struct digraph *d, nodename vertex ) {
 };
 
 
-void depth_first( struct digraph *d, nodename vertex ) {
+void depth_first( struct digraph_c *d, nodename vertex ) {
     int vertex_size = d->vertex_count;
     nodename *V = calloc( (size_t)vertex_size, sizeof(nodename));
     int v_size = 0;
@@ -124,7 +124,7 @@ void depth_first( struct digraph *d, nodename vertex ) {
 
 
 int main( int argc, char *argv[] ) {
-    struct digraph x;
+    struct digraph_c x;
     build_a(&x);
 
     depth_first(&x,'A');
