@@ -16,9 +16,11 @@
 
 using namespace std;
 
+/** This is the type we will use to represent the name of a graph node */
 typedef char nodename;
 constexpr nodename no_node = 0;
 
+/** represents an edge in a directed graph  */
 struct edge {
     nodename from;
     nodename to;
@@ -26,6 +28,7 @@ struct edge {
 };
 
 
+/** Instances represent a directed graph    */
 class digraph {
 public:
     digraph( const set<nodename> &vertices,
@@ -38,6 +41,9 @@ private:
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
 };
 
+/**  Constructs a directed graph from lists of vertices and edges
+     @param[in] vertices The <set> of vertices
+     @param[in] edges The <vector> of edges     */
 digraph::digraph(const set<nodename> &vertices,
                  const vector<edge> & edges ) : _vertices(vertices)
 {
@@ -48,6 +54,9 @@ digraph::digraph(const set<nodename> &vertices,
     }
 };
 
+/**  Performs a depth-first search of the digraph
+     @param[in] vertex The origin vertex
+     @return void */
 void digraph::dfs( nodename vertex )
 {
     set<nodename> V;
@@ -66,6 +75,9 @@ void digraph::dfs( nodename vertex )
     }
 };
 
+/**  Performs a breadth-first search of the digraph
+     @param[in] vertex The origin vertex
+     @return void */
 void digraph::bfs( nodename vertex )
 {
     set<nodename> V;
@@ -86,7 +98,7 @@ void digraph::bfs( nodename vertex )
     }
 };
 
-
+/** represents an entry in the priority queue in Dijkstra's algorithm  */
 struct heap_data {
     pair<nodename,int> pq_data;
     heap_data(pair<nodename,int> data) : pq_data(data) {};
@@ -94,6 +106,10 @@ struct heap_data {
         { return get<1>(pq_data) < get<1>(b.pq_data); };
 };
 
+/**  Finds the shortest path from origin to destination with Dijkstra's algorithm
+     @param[in] origin The origin vertex
+     @param[in] destination The destination vertex
+     @return Returns an ordered <deque> of the nodenames in the path */
 deque<nodename> digraph::dijkstra( nodename origin, nodename destination)
 {
     set<nodename> V;
@@ -143,12 +159,12 @@ deque<nodename> digraph::dijkstra( nodename origin, nodename destination)
 
 
 struct edge eds[] = { {'A','B',2},{'A','E',1}
-                           , {'B','C',3},{'B','A',2}
-                           , {'C','C',1},{'C','D',2}
-                           , {'D','E',0}
-                           , {'E','D',1},{'E','B',2} };
+                      , {'B','C',3},{'B','A',2}
+                      , {'C','C',1},{'C','D',2}
+                      , {'D','E',0}
+                      , {'E','D',1},{'E','B',2} };
 
-char verts[] = "ABCDE";
+nodename verts[] = "ABCDE";
 
 int main( int argc, char *argv[] )
 {
