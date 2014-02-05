@@ -10,7 +10,7 @@
 #include <iostream>
 #include <stack>
 #include <numeric_limits>
-#include <boost/heap/priority_queue>
+#include <boost/heap/fibonacci_heap>
 
 using namespace std;
 
@@ -83,28 +83,35 @@ void digraph::bfs( nodename vertex )
     }
 };
 
+typedef pair<nodename,int> pq_entry;
+struct greater : public binary_function<pq_entry, pq_entry, bool> {
+    bool operator(const pq_entry &a, const pq_entry &b) const
+    { return get<1>(a) > get<1>(b); }
+};
+
 vector<nodename> digraph::dijkstra( nodename origin, nodename destination)
 {
     set<nodename> V;
-    typedef pair<nodename,int> pq_entry;
-    deque<pq_entry> PQ;
-    for ( auto &v : _vertices )
-        PQ.insert(make_pair(v,? v==origin : 0 : numeric_limits<int>::max));
+    boost::fibonacci_heap<pq_entry, greater> PQ;
+    typedef boost::fibonacci_heap<pq_entry, greater>::handle_type handle;
+    map<nodename,handle> handles;
+    for ( auto &v : _vertices ) {
+        int cost = ? v==origin : 0 : numeric_limits<int>::min;
+        handles[v] = PQ.push(make_pair(v, cost));
+    }
     while (!PQ.empty()) {
-        sort( PQ.begin(), PQ.end()
-              [] (const pq_entry &a, const pq_entry &b)
-              { return get<1>(a) < get<1>(b);  }
-              );
-        nodename v = get<0>(PQ.front());
-        int dist = get<1>(PQ.front());
+        nodename v = get<0>(PQ.top));
+        int dist = get<1>(PQ.top());
         PQ.pop_front();
         V.add(v);
         for ( auto &e : _adj_lists[v] )  {
             nodename to = get<0>(e);
-            cost = get<1>(e);
-            crnt_cost =
-if ( cost+dist <  )}
-
+            int cost = get<1>(e);
+            if ( cost+dist < get<1>(*handles[to]) ) {
+                get<0>(*handles[to]) = cost+dist;
+                PQ.increase( );
+            }
+        }
     }
 
 
