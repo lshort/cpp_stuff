@@ -16,21 +16,17 @@
 
 using namespace std;
 
-/** This is the type we will use to represent the name of a graph node */
-typedef char nodename;
-constexpr nodename no_node = 0;
-
-/** represents an edge in a directed graph  */
-struct edge {
-    nodename from;
-    nodename to;
-    int weight;
-};
-
 
 /** Instances represent a directed graph; immutable once constructed    */
 class digraph {
 public:
+    typedef char nodename;
+    static constexpr nodename no_node = 0;
+    struct edge {
+        nodename from;
+        nodename to;
+        int weight;
+    };
     digraph( const set<nodename> &vertices,
              const vector<edge> & edges );
     void bfs( nodename vertex );
@@ -100,8 +96,8 @@ void digraph::bfs( nodename vertex )
 
 /** represents an entry in the priority queue in Dijkstra's algorithm  */
 struct heap_data {
-    pair<nodename,int> pq_data;
-    heap_data(pair<nodename,int> data) : pq_data(data) {};
+    pair<digraph::nodename,int> pq_data;
+    heap_data(pair<digraph::nodename,int> data) : pq_data(data) {};
     bool operator<(const heap_data &b) const
         { return get<1>(pq_data) < get<1>(b.pq_data); };
 };
@@ -110,7 +106,7 @@ struct heap_data {
      @param[in] origin The origin vertex
      @param[in] destination The destination vertex
      @return Returns an ordered <deque> of the nodenames in the path */
-deque<nodename> digraph::dijkstra( nodename origin, nodename destination)
+deque<digraph::nodename> digraph::dijkstra( nodename origin, nodename destination)
 {
     set<nodename> V;
     boost::heap::fibonacci_heap<heap_data> PQ;
@@ -158,17 +154,18 @@ deque<nodename> digraph::dijkstra( nodename origin, nodename destination)
 
 
 
-struct edge eds[] = { {'A','B',2},{'A','E',1}
+digraph::edge eds[] = { {'A','B',2},{'A','E',1}
                       , {'B','C',3},{'B','A',2}
                       , {'C','C',1},{'C','D',2}
                       , {'D','E',0}
                       , {'E','D',1},{'E','B',2} };
 
-nodename verts[] = "ABCDE";
+digraph::nodename verts[] = "ABCDE";
 
 int main( int argc, char *argv[] )
 {
-    digraph x(set<nodename>(verts,verts+5),vector<edge>(eds,eds+9));
+    digraph x(set<digraph::nodename>(verts,verts+5),
+              vector<digraph::edge>(eds,eds+9));
     x.bfs('A');
     cout << endl;
     x.dfs('A');
