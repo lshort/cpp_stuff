@@ -1,6 +1,7 @@
 /// graph.cpp
 ///   some graph algorithms
 
+
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -32,6 +33,7 @@ public:
     void bfs( nodename vertex );
     void dfs( nodename vertex );
     deque<nodename> dijkstra( nodename origin, nodename destination);
+    set<nodename> topsort( );
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
@@ -153,12 +155,53 @@ deque<digraph::nodename> digraph::dijkstra( nodename origin, nodename destinatio
 };
 
 
+/**  Performs a topological sort of the graph
+     @return Returns a <vector> of the ordered vertex names */
+set<digraph::nodename> digraph::topsort( )
+{
+    set<nodename> no_pred( _vertices);
+    vector<nodename> sorted;
+    unordered_map<nodename,set<nodename>> reverse_adj_list;
+    for ( auto a : _adj_lists) {
+        for ( auto e : a.second ) {
+            nodename v = get<0>(e);
+            reverse_adj_list[v].insert(a.first);
+            if ( v != a.first)
+                no_pred.erase(no_pred.find(v));
+        }
+    }
+    while ( !no_pred.empty()) {
+        auto v = no_pred.begin();
+        auto edges = _adj_lists[*v];
+        for ( auto &e : edges ) {
+            nodename t = get<0>(e);
+            reverse_adj_list[t].erase(reverse_adj_list[t].find(*v));
+            if ( reverse_adj_list[t].empty() )
+                no_pred.insert(t);
+        }
+    }
+    bool found = false;
+    for ( auto a : reverse_adj_list )
+        if ( !(a.second).empty() )
+            found = true;
+    if (found)
+        throw "Found a cycle";
+    else
+        return no_pred;
+}
 
-digraph::edge eds[] = { {'A','B',2},{'A','E',1}
-                      , {'B','C',3},{'B','A',2}
-                      , {'C','C',1},{'C','D',2}
-                      , {'D','E',0}
-                      , {'E','D',1},{'E','B',2} };
+
+
+    digraph::edge eds[] = { {'A','B',2},{'A','E',1}
+                            , {'B','C',3},{'B','A',2}
+                            , {'C','C',1},{'C','D',2}
+                            , {'D','E',0}
+                            , {'E','D',1},{'E','B',2} };
+
+    digraph::edge eds2[] = { {'A','B',2},{'A','E',1}
+                            , {'B','C',3}
+                            , {'C','C',1},{'C','D',2}
+                            , {'E','D',1},{'E','B',2} };
 
 digraph::nodename verts[] = "ABCDE";
 
