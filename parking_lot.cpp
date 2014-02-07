@@ -19,6 +19,8 @@ using boost::optional;
 //  First, some functions to compare IEEE double precision numbers
 //
 
+
+
 const int MAX_DBL_SIG_FIG = numeric_limits<double>::digits - 1;
 
 /**  Compares two IEEE double values for equality, to a specific
@@ -26,15 +28,15 @@ const int MAX_DBL_SIG_FIG = numeric_limits<double>::digits - 1;
      @param[in] a the first comparison value
      @param[in] b the second comparison value
      @return true if the two values are equal, or very close to it */
-bool double_equal( double a, double b, 
-                   unsigned int sig_figs = MAX_DBL_SIG_FIG )  
+bool double_equal( double a, double b,
+                   unsigned int sig_figs = MAX_DBL_SIG_FIG )
 {
   int exponent = -min( (unsigned int)MAX_DBL_SIG_FIG, sig_figs );
   double allowable_delta = a * pow( 10.0, exponent );
   return ( abs(a-b) < allowable_delta );
 }
 
-bool double_greater( double a, double b, 
+bool double_greater( double a, double b,
                      unsigned int sig_figs = MAX_DBL_SIG_FIG )
 {
   return ( a > b && !double_equal(a,b,sig_figs) );
@@ -63,14 +65,14 @@ bool is_greater( const dist &a, const dist &b )  {
 
 constexpr static double ft = 2.54*12.0;
 constexpr static double yd = ft * 3.0;
-static map<dist::dst_units, double> conversions = 
+static map<dist::dst_units, double> conversions =
   {  {dist::CM, 1.0}
    , {dist::INCH,2.54}
    , {dist::FOOT,ft}
    , {dist::METER,100.0}
    , {dist::YARD, yd} };
 
-double dist::conversion( dst_units from, dst_units to )  
+double dist::conversion( dst_units from, dst_units to )
 {
   return conversions[from] / conversions[to];
 }
@@ -104,7 +106,7 @@ public:
   parking_lot(const parking_lot &&orig) ;
   friend void swap( parking_lot& first, parking_lot& second );
   parking_lot &operator = (parking_lot orig);
-  void add_space( const dist &w, const dist &l, 
+  void add_space( const dist &w, const dist &l,
                   const char row, const unsigned int no );
   void add_to_row( const dist &w, const dist &l, const char row,   // add multiple
                    const unsigned int first, const unsigned int count ); // spaces
@@ -124,7 +126,7 @@ private:
   typedef pair<vector<parking_space>*,int> parking_space_ref;
   unordered_map<string, parking_space_ref>  license_plate_map;
   deque<parking_space_ref> available_spaces;
-  static parking_space &get_space( const parking_space_ref &r ) 
+  static parking_space &get_space( const parking_space_ref &r )
     { return  (*get<0>(r))[get<1>(r)]; };
   parking_space_ref copy_ref( const parking_space_ref &r );
 };
@@ -154,16 +156,16 @@ parking_lot::parking_lot(const parking_lot &&orig) {
   available_spaces  = move(orig.available_spaces);
 }
 
-/** The parameter 'r' points to a parking_space_ref in a different 
+/** The parameter 'r' points to a parking_space_ref in a different
     parking_lot.  We build and return a parking_space_ref in our own
-    parking_lot that points to the parking_space that has the same 
-    row and number as 'r' points to.  Needed for the copy constructor. 
+    parking_lot that points to the parking_space that has the same
+    row and number as 'r' points to.  Needed for the copy constructor.
     @param[in] r The reference that we are copying
     @return The reference that we have built  */
 parking_lot::parking_space_ref parking_lot::copy_ref( const parking_space_ref &r ) {
   vector<parking_space> *oldvec = get<0>(r);
   int index = get<1>(r);
-  parking_space &space = (*oldvec)[index];  
+  parking_space &space = (*oldvec)[index];
   vector<parking_space> *newvec = &spaces_by_row[space.row];
   return make_pair( newvec, index );
 }
@@ -172,7 +174,7 @@ parking_lot::parking_space_ref parking_lot::copy_ref( const parking_space_ref &r
     @param[in] orig The parking_lot which is assigned from */
 parking_lot::parking_lot(const parking_lot &orig) {
   // get our own copy of the map and vectors of data it contains
-  spaces_by_row = orig.spaces_by_row;  
+  spaces_by_row = orig.spaces_by_row;
   for ( auto &entry : orig.license_plate_map )  {
     parking_space_ref spaceref = get<1>(entry);
     license_plate_map[get<0>(entry)] = copy_ref( spaceref );
@@ -197,7 +199,7 @@ parking_lot &parking_lot::operator = (parking_lot orig) {
     @param[in] no The number of the parking space */
 void parking_lot::add_space(const dist &w, const dist &l, char row, unsigned int no )
 {
-  add_to_row( w, l, row, no, 1 ); 
+  add_to_row( w, l, row, no, 1 );
 }
 
 /** Adds several parking spaces to the row, numbering them sequentially
@@ -206,7 +208,7 @@ void parking_lot::add_space(const dist &w, const dist &l, char row, unsigned int
     @param[in] row The row's identifying letter
     @param[in] first The number of the first parking space
     @param[in] count The number of parking spaces to add   */
-void parking_lot::add_to_row(const dist &w, const dist &l, char row, 
+void parking_lot::add_to_row(const dist &w, const dist &l, char row,
                              unsigned int first, unsigned int count )
 {
   auto mypair = spaces_by_row.find(row);
@@ -216,7 +218,7 @@ void parking_lot::add_to_row(const dist &w, const dist &l, char row,
   }
   vector<parking_space> &vec = get<1>(*mypair);
   for (unsigned int i=first; i<first+count; ++i)  {
-    vec.push_back( parking_space{ w, l, row, i, no_car } ); 
+    vec.push_back( parking_space{ w, l, row, i, no_car } );
     available_spaces.push_back( make_pair(&vec,vec.size()-1) );
   }
 }
@@ -228,7 +230,7 @@ bool parking_lot::park_car( const car &veh )
 {
   dist  l = veh.length;
   dist  w = veh.width;
-  auto spaceref = find_if( available_spaces.begin(), available_spaces.end(), 
+  auto spaceref = find_if( available_spaces.begin(), available_spaces.end(),
              [&l,&w, this] (parking_space_ref ref)  {
              parking_space &p = get_space(ref);
              return (   is_greater(p.length,l)
@@ -247,7 +249,7 @@ bool parking_lot::park_car( const car &veh )
 /** Removes the car with the specified license plate
     @param[in] license The license plate to search for
     @return Returns true if it found a matching car, false otherwise */
-bool parking_lot::remove_car( const string &license )  
+bool parking_lot::remove_car( const string &license )
 {
   auto entry = license_plate_map.find(license);
   if ( entry == license_plate_map.end() )  {
@@ -260,7 +262,7 @@ bool parking_lot::remove_car( const string &license )
   return true;
 }
 
-/** Prints a report 
+/** Prints a report
     @param[in] out The stream to print the report to */
 void parking_lot::print_report(ostream &out) const
 {
@@ -281,15 +283,15 @@ void parking_lot::print_report(ostream &out) const
 
 /**  Find the car the occupies a specific parking space
      @param[in] row  The row of the parking space
-     @param[in] no   The number of the parking space  
-     @return If not found -- the empty object 
+     @param[in] no   The number of the parking space
+     @return If not found -- the empty object
      @return If found -- the car data */
 optional<car> parking_lot::find_occupant( char row, unsigned int no ) const
 {
   auto mypair = spaces_by_row.find(row);
   if ( spaces_by_row.end() != mypair )  {
     const vector<parking_space> &vec = get<1>(*mypair);
-    for (auto &space : vec)  
+    for (auto &space : vec)
       if ( space.number == no )
         return space.occupant;
   }
@@ -297,7 +299,7 @@ optional<car> parking_lot::find_occupant( char row, unsigned int no ) const
 }
 
 /**  Find a car with the specified license plate
-     @param [in] license The license plate to find 
+     @param [in] license The license plate to find
      @return If not found -- the empty object
      @return If found -- the parking space data */
 optional<parking_space> parking_lot::find_car( const string &license ) const {
@@ -305,7 +307,7 @@ optional<parking_space> parking_lot::find_car( const string &license ) const {
     const parking_space_ref &ref = license_plate_map.at(license);
     vector<parking_space> *vec = get<0>(ref);
     int index = get<1>(ref);
-    return optional<parking_space>((*vec)[index]);  
+    return optional<parking_space>((*vec)[index]);
   } catch (const std::out_of_range & out) {
     return optional<parking_space>();
   }

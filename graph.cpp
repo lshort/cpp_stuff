@@ -33,7 +33,7 @@ public:
     void bfs( nodename vertex );
     void dfs( nodename vertex );
     deque<nodename> dijkstra( nodename origin, nodename destination);
-    set<nodename> topsort( );
+    vector<nodename> topsort( );
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
@@ -157,28 +157,37 @@ deque<digraph::nodename> digraph::dijkstra( nodename origin, nodename destinatio
 
 /**  Performs a topological sort of the graph
      @return Returns a <vector> of the ordered vertex names */
-set<digraph::nodename> digraph::topsort( )
+vector<digraph::nodename> digraph::topsort( )
 {
-    set<nodename> no_pred( _vertices);
+    set<nodename> no_pred;
     vector<nodename> sorted;
     unordered_map<nodename,set<nodename>> reverse_adj_list;
     for ( auto a : _adj_lists) {
         for ( auto e : a.second ) {
             nodename v = get<0>(e);
             reverse_adj_list[v].insert(a.first);
-            if ( v != a.first)
-                no_pred.erase(no_pred.find(v));
         }
     }
+    for ( auto v : _vertices ) {
+        if ( 0 == reverse_adj_list[v].size() )
+            no_pred.insert(v);
+    }
     while ( !no_pred.empty()) {
-        auto v = no_pred.begin();
-        auto edges = _adj_lists[*v];
+        nodename v = *no_pred.begin();
+        sorted.push_back(v);
+        auto edges = _adj_lists[v];
+        cout << "removing from " << v << endl;
         for ( auto &e : edges ) {
             nodename t = get<0>(e);
-            reverse_adj_list[t].erase(reverse_adj_list[t].find(*v));
-            if ( reverse_adj_list[t].empty() )
+            cout << "testing " << t << endl;
+            fflush(stdout);
+            reverse_adj_list[t].erase(reverse_adj_list[t].find(v));
+            if ( reverse_adj_list[t].empty() )  {
                 no_pred.insert(t);
+                cout << "inserted " << t << endl;
+            }
         }
+        no_pred.erase(no_pred.find(v));
     }
     bool found = false;
     for ( auto a : reverse_adj_list )
@@ -187,7 +196,7 @@ set<digraph::nodename> digraph::topsort( )
     if (found)
         throw "Found a cycle";
     else
-        return no_pred;
+        return sorted;
 }
 
 
@@ -198,10 +207,14 @@ set<digraph::nodename> digraph::topsort( )
                             , {'D','E',0}
                             , {'E','D',1},{'E','B',2} };
 
-    digraph::edge eds2[] = { {'A','B',2},{'A','E',1}
-                            , {'B','C',3}
-                            , {'C','C',1},{'C','D',2}
-                            , {'E','D',1},{'E','B',2} };
+digraph::edge eds2[] = { {'A','B',2},{'A','E',1}
+                         , {'B','C',3}
+                         , {'C','D',2}
+                         , {'E','D',1},{'E','B',2} };
+digraph::edge eds3[] = { {'A','B',2},{'A','E',1}
+                         , {'B','C',3},{'A','B',3}
+                         , {'C','D',2}
+                         , {'E','D',1},{'E','B',2} };
 
 digraph::nodename verts[] = "ABCDE";
 
@@ -209,10 +222,27 @@ int main( int argc, char *argv[] )
 {
     digraph x(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds,eds+9));
+    digraph y(set<digraph::nodename>(verts,verts+5),
+              vector<digraph::edge>(eds2,eds2+6));
+    digraph z(set<digraph::nodename>(verts,verts+5),
+              vector<digraph::edge>(eds2,eds2+7));
+    y.bfs('A');
+    cout << endl;
+    y.dfs('A');
+    y.dijkstra('A','D');
+    y.topsort();
+
+    z.bfs('A');
+    cout << endl;
+    z.dfs('A');
+    z.dijkstra('A','D');
+    z.topsort();
+
     x.bfs('A');
     cout << endl;
     x.dfs('A');
     x.dijkstra('A','D');
+    x.topsort();
 
     return 0;
 }
