@@ -16,10 +16,10 @@ using boost::optional;
 //  utilities, then the distance class ('dist'), then the classes 'car'
 //  and 'parking_space' , then finally the 'parking_lot' class
 
+
+
 //  First, some functions to compare IEEE double precision numbers
 //
-
-
 
 const int MAX_DBL_SIG_FIG = numeric_limits<double>::digits - 1;
 
@@ -43,8 +43,8 @@ bool double_greater( double a, double b,
 }
 
 
-//  *** instances denote a distance, including units of measurement
-//
+/// instances denote a distance, including units of measurement
+///
 class dist {
 public:
   enum dst_units { CM = 0, INCH = 1, FOOT = 2, METER = 3, YARD = 4 };
