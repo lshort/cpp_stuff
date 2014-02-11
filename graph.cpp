@@ -30,8 +30,8 @@ public:
     };
     digraph( const set<nodename> &vertices,
              const vector<edge> & edges );
-    void bfs( nodename vertex );
-    void dfs( nodename vertex );
+    vector<nodename> dfs( nodename vertex );
+    vector<nodename> bfs( nodename vertex );
     deque<nodename> dijkstra( nodename origin, nodename destination);
     vector<nodename> topsort( );
 private:
@@ -55,8 +55,9 @@ digraph::digraph(const set<nodename> &vertices,
 /**  Performs a depth-first search of the digraph
      @param[in] vertex The origin vertex
      @return void */
-void digraph::dfs( nodename vertex )
+vector<digraph::nodename> digraph::dfs( nodename vertex )
 {
+    vector<nodename> retval;
     set<nodename> V;
     stack<nodename> S;
     S.push(vertex);
@@ -65,19 +66,21 @@ void digraph::dfs( nodename vertex )
         S.pop();
         if ( V.end() == V.find(top))  {
             V.insert(top);
-            cout << "DFS Visiting " << top << endl;
+            retval.push_back(top);
             for ( auto &p : _adj_lists[top] )  {
                 S.push(get<0>(p));
             }
         }
     }
+    return retval;
 };
 
 /**  Performs a breadth-first search of the digraph
      @param[in] vertex The origin vertex
      @return void */
-void digraph::bfs( nodename vertex )
+vector<digraph::nodename> digraph::bfs( nodename vertex )
 {
+    vector<nodename> retval;
     set<nodename> V;
     deque<nodename> Q;
     Q.push_back(vertex);
@@ -85,7 +88,7 @@ void digraph::bfs( nodename vertex )
     while (!Q.empty()) {
         nodename v = Q.front();
         Q.pop_front();
-        cout << "BFS Visiting " << v << endl;
+        retval.push_back(v);
         for ( auto &p : _adj_lists[v] )  {
             nodename to = get<0>(p);
             if ( V.end() == V.find(to)) {
@@ -94,6 +97,7 @@ void digraph::bfs( nodename vertex )
             }
         }
     }
+    return retval;
 };
 
 /** represents an entry in the priority queue in Dijkstra's algorithm  */
@@ -176,15 +180,12 @@ vector<digraph::nodename> digraph::topsort( )
         nodename v = *no_pred.begin();
         sorted.push_back(v);
         auto edges = _adj_lists[v];
-        cout << "removing from " << v << endl;
         for ( auto &e : edges ) {
             nodename t = get<0>(e);
-            cout << "testing " << t << endl;
             fflush(stdout);
             reverse_adj_list[t].erase(reverse_adj_list[t].find(v));
             if ( reverse_adj_list[t].empty() )  {
                 no_pred.insert(t);
-                cout << "inserted " << t << endl;
             }
         }
         no_pred.erase(no_pred.find(v));
@@ -220,27 +221,28 @@ digraph::nodename verts[] = "ABCDE";
 
 int main( int argc, char *argv[] )
 {
+
     digraph x(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds,eds+9));
     digraph y(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds2,eds2+6));
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds2,eds2+7));
-    y.bfs('A');
+    y.bfs('A' );
     cout << endl;
-    y.dfs('A');
+    y.dfs('A' );
     y.dijkstra('A','D');
     y.topsort();
 
     z.bfs('A');
     cout << endl;
-    z.dfs('A');
+    z.dfs('A' );
     z.dijkstra('A','D');
     z.topsort();
 
     x.bfs('A');
     cout << endl;
-    x.dfs('A');
+    x.dfs('A' );
     x.dijkstra('A','D');
     x.topsort();
 
