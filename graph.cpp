@@ -1,7 +1,7 @@
 /// graph.cpp
 ///   some graph algorithms
 
-
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -16,7 +16,7 @@
 #include <boost/heap/fibonacci_heap.hpp>
 
 using namespace std;
-
+using std::placeholders::_1;
 
 /** Instances represent a directed graph; immutable once constructed    */
 class digraph {
@@ -30,9 +30,9 @@ public:
     };
     digraph( const set<nodename> &vertices,
              const vector<edge> & edges );
-    vector<nodename> dfs( nodename vertex );
-    vector<nodename> bfs( nodename vertex );
-    deque<nodename> dijkstra( nodename origin, nodename destination);
+    vector<nodename> dfs( const nodename vertex );
+    vector<nodename> bfs( const nodename vertex );
+    deque<nodename> dijkstra( const nodename origin, const nodename destination);
     vector<nodename> topsort( );
 private:
     set<nodename> _vertices;
@@ -55,7 +55,7 @@ digraph::digraph(const set<nodename> &vertices,
 /**  Performs a depth-first search of the digraph
      @param[in] vertex The origin vertex
      @return void */
-vector<digraph::nodename> digraph::dfs( nodename vertex )
+vector<digraph::nodename> digraph::dfs( const nodename vertex )
 {
     vector<nodename> retval;
     set<nodename> V;
@@ -78,7 +78,7 @@ vector<digraph::nodename> digraph::dfs( nodename vertex )
 /**  Performs a breadth-first search of the digraph
      @param[in] vertex The origin vertex
      @return void */
-vector<digraph::nodename> digraph::bfs( nodename vertex )
+vector<digraph::nodename> digraph::bfs( const nodename vertex )
 {
     vector<nodename> retval;
     set<nodename> V;
@@ -112,7 +112,8 @@ struct heap_data {
      @param[in] origin The origin vertex
      @param[in] destination The destination vertex
      @return Returns an ordered <deque> of the nodenames in the path */
-deque<digraph::nodename> digraph::dijkstra( nodename origin, nodename destination)
+deque<digraph::nodename> digraph::dijkstra( const nodename origin,
+                                            const nodename destination)
 {
     set<nodename> V;
     boost::heap::fibonacci_heap<heap_data> PQ;
@@ -201,12 +202,42 @@ vector<digraph::nodename> digraph::topsort( )
 }
 
 
+/**  Prints out any container of any class, provided the class implements operator <<
+     @param[in] ostr The output stream
+     @param[in] xs The container
+     @return Returns the output stream      */
+template< typename T,
+          template<typename El, typename Alloc=std::allocator<El> > class Container >
+ostream &operator<< (ostream &ostr, const Container<T> &xs)
+{
+    ostr << "{ ";
+    for ( auto &x : xs )
+        ostr << x << ",";
+    ostr << " }";
+    return ostr;
+}
 
-    digraph::edge eds[] = { {'A','B',2},{'A','E',1}
-                            , {'B','C',3},{'B','A',2}
-                            , {'C','C',1},{'C','D',2}
-                            , {'D','E',0}
-                            , {'E','D',1},{'E','B',2} };
+/**  Prints out the elements of the container in order
+@param[in] title The title of the print listing
+@param[in] xs The container to print
+@return void */
+template< typename T,
+          template<typename El, typename Alloc=std::allocator<El> > class Container >
+void print_visit( const char* title, const Container<T> &xs)
+{
+    cout << title << " visiting ";
+    cout << xs;
+    cout << endl;
+};
+
+
+digraph::nodename verts[] = "ABCDE";
+
+digraph::edge eds[] = { {'A','B',2},{'A','E',1}
+                        , {'B','C',3},{'B','A',2}
+                        , {'C','C',1},{'C','D',2}
+                        , {'D','E',0}
+                        , {'E','D',1},{'E','B',2} };
 
 digraph::edge eds2[] = { {'A','B',2},{'A','E',1}
                          , {'B','C',3}
@@ -217,8 +248,6 @@ digraph::edge eds3[] = { {'A','B',2},{'A','E',1}
                          , {'C','D',2}
                          , {'E','D',1},{'E','B',2} };
 
-digraph::nodename verts[] = "ABCDE";
-
 int main( int argc, char *argv[] )
 {
 
@@ -228,23 +257,26 @@ int main( int argc, char *argv[] )
               vector<digraph::edge>(eds2,eds2+6));
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds2,eds2+7));
-    y.bfs('A' );
-    cout << endl;
-    y.dfs('A' );
-    y.dijkstra('A','D');
-    y.topsort();
 
-    z.bfs('A');
-    cout << endl;
-    z.dfs('A' );
-    z.dijkstra('A','D');
-    z.topsort();
+    auto bfs_visit = std::bind( print_visit<digraph::nodename,vector>,
+                                "BFS", _1);
+    auto dfs_visit = std::bind( print_visit<digraph::nodename,vector>,
+                                "DFS", _1);
+    auto topsort_visit = std::bind( print_visit<digraph::nodename,vector>,
+                                    "Topsort", _1);
+    auto dijkstra_visit = std::bind( print_visit<digraph::nodename,deque>,
+                                    "Dijkstra", _1);
 
-    x.bfs('A');
-    cout << endl;
-    x.dfs('A' );
-    x.dijkstra('A','D');
-    x.topsort();
+    auto some_tests = [&] (digraph &g, digraph::nodename source,
+                           digraph::nodename destination)
+        { bfs_visit(g.bfs(source));
+          dfs_visit(g.dfs(source));
+          topsort_visit(g.topsort());
+          dijkstra_visit(g.dijkstra(source,destination)); };
+
+    some_tests(y,'A','D');
+    some_tests(z,'A','D');
+    some_tests(x,'A','D');
 
     return 0;
 }
