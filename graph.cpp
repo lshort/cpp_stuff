@@ -30,10 +30,10 @@ public:
     };
     digraph( const set<nodename> &vertices,
              const vector<edge> & edges );
-    vector<nodename> dfs( const nodename vertex );
-    vector<nodename> bfs( const nodename vertex );
-    deque<nodename> dijkstra( const nodename origin, const nodename destination);
-    vector<nodename> topsort( );
+    vector<nodename> dfs( const nodename vertex ) const;
+    vector<nodename> bfs( const nodename vertex ) const;
+    deque<nodename> dijkstra( const nodename origin, const nodename destination) const;
+    vector<nodename> topsort( ) const;
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
@@ -55,7 +55,7 @@ digraph::digraph(const set<nodename> &vertices,
 /**  Performs a depth-first search of the digraph
      @param[in] vertex The origin vertex
      @return void */
-vector<digraph::nodename> digraph::dfs( const nodename vertex )
+vector<digraph::nodename> digraph::dfs( const nodename vertex ) const
 {
     vector<nodename> retval;
     set<nodename> V;
@@ -67,7 +67,7 @@ vector<digraph::nodename> digraph::dfs( const nodename vertex )
         if ( V.end() == V.find(top))  {
             V.insert(top);
             retval.push_back(top);
-            for ( auto &p : _adj_lists[top] )  {
+            for ( auto &p : _adj_lists.at(top) )  {
                 S.push(get<0>(p));
             }
         }
@@ -78,7 +78,7 @@ vector<digraph::nodename> digraph::dfs( const nodename vertex )
 /**  Performs a breadth-first search of the digraph
      @param[in] vertex The origin vertex
      @return void */
-vector<digraph::nodename> digraph::bfs( const nodename vertex )
+vector<digraph::nodename> digraph::bfs( const nodename vertex ) const
 {
     vector<nodename> retval;
     set<nodename> V;
@@ -89,7 +89,7 @@ vector<digraph::nodename> digraph::bfs( const nodename vertex )
         nodename v = Q.front();
         Q.pop_front();
         retval.push_back(v);
-        for ( auto &p : _adj_lists[v] )  {
+        for ( auto &p : _adj_lists.at(v) )  {
             nodename to = get<0>(p);
             if ( V.end() == V.find(to)) {
                 V.insert(to);
@@ -113,7 +113,7 @@ struct heap_data {
      @param[in] destination The destination vertex
      @return Returns an ordered <deque> of the nodenames in the path */
 deque<digraph::nodename> digraph::dijkstra( const nodename origin,
-                                            const nodename destination)
+                                            const nodename destination) const
 {
     set<nodename> V;
     boost::heap::fibonacci_heap<heap_data> PQ;
@@ -133,7 +133,7 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
         V.insert(v);
         if ( dist == inf )
             break;
-        for ( auto &e : _adj_lists[v] )  {
+        for ( auto &e : _adj_lists.at(v) )  {
             nodename to = get<0>(e);
             int cost = get<1>(e);
             handle myhand = handles[to];
@@ -162,7 +162,7 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
 
 /**  Performs a topological sort of the graph
      @return Returns a <vector> of the ordered vertex names */
-vector<digraph::nodename> digraph::topsort( )
+vector<digraph::nodename> digraph::topsort( ) const
 {
     set<nodename> no_pred;
     vector<nodename> sorted;
@@ -180,7 +180,7 @@ vector<digraph::nodename> digraph::topsort( )
     while ( !no_pred.empty()) {
         nodename v = *no_pred.begin();
         sorted.push_back(v);
-        auto edges = _adj_lists[v];
+        auto edges = _adj_lists.at(v);
         for ( auto &e : edges ) {
             nodename t = get<0>(e);
             fflush(stdout);
@@ -205,6 +205,7 @@ vector<digraph::nodename> digraph::topsort( )
 /**  Prints out any container of any class, provided the class implements operator <<
      @param[in] ostr The output stream
      @param[in] xs The container
+
      @return Returns the output stream      */
 template< typename T,
           template<typename El, typename Alloc=std::allocator<El> > class Container >
@@ -216,6 +217,12 @@ ostream &operator<< (ostream &ostr, const Container<T> &xs)
     ostr << " }";
     return ostr;
 }
+
+
+template <typename T>
+struct id {
+    typedef T type;
+};
 
 /**  Prints out the elements of the container in order
 @param[in] title The title of the print listing
