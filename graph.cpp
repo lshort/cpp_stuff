@@ -45,6 +45,8 @@ private:
 digraph::digraph(const set<nodename> &vertices,
                  const vector<edge> & edges ) : _vertices(vertices)
 {
+    for ( auto &v : vertices )
+        _adj_lists[v] = vector<pair<nodename,int>>();
     for ( auto &e : edges )  {
         if ( vertices.end() != vertices.find(e.from)) {
             _adj_lists[e.from].push_back(make_pair(e.to,e.weight));
@@ -153,9 +155,7 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
         }
         rval.push_front(crnt);
     }
-    cout << endl;
     for_each( rval.begin(), rval.end(), [] (nodename v) { cout << v << " ";}  );
-    cout << endl << endl;
     return rval;
 };
 
@@ -219,24 +219,23 @@ ostream &operator<< (ostream &ostr, const Container<T> &xs)
 }
 
 
-template <typename T>
-struct id {
-    typedef T type;
+/**  A glorified operator ().  Should be a lambda, but you can't std::bind a lambda
+ */
+struct print_visit {
+    print_visit() {};
+    /** Prints out the visited nodes in order
+    @param[in] title The title of the print listing
+    @param[in] xs The container to print
+    @return void */
+    template< typename T,
+              template<typename El, typename Alloc=std::allocator<El> > class Container >
+    void operator () ( const char* title, const Container<T> &xs) const
+    {
+        cout << title << " visiting ";
+        cout << xs;
+        cout << endl;
+    };
 };
-
-/**  Prints out the elements of the container in order
-@param[in] title The title of the print listing
-@param[in] xs The container to print
-@return void */
-template< typename T,
-          template<typename El, typename Alloc=std::allocator<El> > class Container >
-void print_visit( const char* title, const Container<T> &xs)
-{
-    cout << title << " visiting ";
-    cout << xs;
-    cout << endl;
-};
-
 
 digraph::nodename verts[] = "ABCDE";
 
@@ -265,18 +264,21 @@ int main( int argc, char *argv[] )
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds2,eds2+7));
 
-    auto bfs_visit = std::bind( print_visit<digraph::nodename,vector>,
+    print_visit pv;
+
+    auto bfs_visit = std::bind( pv,
                                 "BFS", _1);
-    auto dfs_visit = std::bind( print_visit<digraph::nodename,vector>,
+    auto dfs_visit = std::bind( pv,
                                 "DFS", _1);
-    auto topsort_visit = std::bind( print_visit<digraph::nodename,vector>,
+    auto topsort_visit = std::bind( pv,
                                     "Topsort", _1);
-    auto dijkstra_visit = std::bind( print_visit<digraph::nodename,deque>,
+    auto dijkstra_visit = std::bind( pv,
                                     "Dijkstra", _1);
 
     auto some_tests = [&] (digraph &g, digraph::nodename source,
                            digraph::nodename destination)
-        { bfs_visit(g.bfs(source));
+        { cout << endl << "Testing a graph" << endl;
+          bfs_visit(g.bfs(source));
           dfs_visit(g.dfs(source));
           topsort_visit(g.topsort());
           dijkstra_visit(g.dijkstra(source,destination)); };
