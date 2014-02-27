@@ -139,8 +139,8 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
             nodename to = get<0>(e);
             int cost = get<1>(e);
             handle myhand = handles[to];
-            if ( dist-cost > get<1>((*myhand).pq_data) ) {
-                get<1>((*myhand).pq_data) = dist-cost;
+            if ( dist - cost > get<1>((*myhand).pq_data) ) {
+                get<1>((*myhand).pq_data) = dist - cost;
                 PQ.increase(myhand, *myhand );
                 previous[to] = v;
             }
@@ -155,7 +155,6 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
         }
         rval.push_front(crnt);
     }
-    for_each( rval.begin(), rval.end(), [] (nodename v) { cout << v << " ";}  );
     return rval;
 };
 
@@ -182,11 +181,10 @@ vector<digraph::nodename> digraph::topsort( ) const
         sorted.push_back(v);
         auto edges = _adj_lists.at(v);
         for ( auto &e : edges ) {
-            nodename t = get<0>(e);
-            fflush(stdout);
-            reverse_adj_list[t].erase(reverse_adj_list[t].find(v));
-            if ( reverse_adj_list[t].empty() )  {
-                no_pred.insert(t);
+            nodename to = get<0>(e);
+            reverse_adj_list[to].erase(reverse_adj_list[to].find(v));
+            if ( reverse_adj_list[to].empty() )  {
+                no_pred.insert(to);
             }
         }
         no_pred.erase(no_pred.find(v));
@@ -196,19 +194,19 @@ vector<digraph::nodename> digraph::topsort( ) const
         if ( !(a.second).empty() )
             found = true;
     if (found)
-        throw "Found a cycle";
+        throw "Found a cycle in the graph";
     else
         return sorted;
 }
 
 
-/**  Prints out any container of any class, provided the class implements operator <<
+/**  Prints out any container of any class, provided the class has operator <<
      @param[in] ostr The output stream
      @param[in] xs The container
-
      @return Returns the output stream      */
 template< typename T,
-          template<typename El, typename Alloc=std::allocator<El> > class Container >
+          template<typename El,
+                   typename Alloc=std::allocator<El> > class Container >
 ostream &operator<< (ostream &ostr, const Container<T> &xs)
 {
     ostr << "{ ";
@@ -219,7 +217,7 @@ ostream &operator<< (ostream &ostr, const Container<T> &xs)
 }
 
 
-/**  A glorified operator ().  Should be a lambda, but you can't std::bind a lambda
+/**  A glorified operator ().  Should be a lambda, but you can't bind a lambda
  */
 struct print_visit {
     print_visit() {};
@@ -228,7 +226,8 @@ struct print_visit {
     @param[in] xs The container to print
     @return void */
     template< typename T,
-              template<typename El, typename Alloc=std::allocator<El> > class Container >
+              template<typename El,
+                       typename Alloc=std::allocator<El> > class Container >
     void operator () ( const char* title, const Container<T> &xs) const
     {
         cout << title << " visiting ";
