@@ -48,8 +48,13 @@ digraph::digraph(const set<nodename> &vertices,
     for ( auto &v : vertices )
         _adj_lists[v] = vector<pair<nodename,int>>();
     for ( auto &e : edges )  {
-        if ( vertices.end() != vertices.find(e.from)) {
+        if ( vertices.end() != vertices.find(e.from) &&
+             vertices.end() != vertices.find(e.to) ) {
             _adj_lists[e.from].push_back(make_pair(e.to,e.weight));
+        } else {
+            cout << e.from << " " << e.to << endl;
+            throw ("Edge (" + to_string(e.from) + "," + to_string(e.to) +
+                   ") has nonexistent vertex");
         }
     }
 };
@@ -165,7 +170,7 @@ vector<digraph::nodename> digraph::topsort( ) const
 {
     set<nodename> no_pred;
     vector<nodename> sorted;
-    unordered_map<nodename,set<nodename>> reverse_adj_list;
+    unordered_map<nodename,multiset<nodename>> reverse_adj_list;
     for ( auto a : _adj_lists) {
         for ( auto e : a.second ) {
             nodename v = get<0>(e);
@@ -179,6 +184,7 @@ vector<digraph::nodename> digraph::topsort( ) const
     while ( !no_pred.empty()) {
         nodename v = *no_pred.begin();
         sorted.push_back(v);
+        no_pred.erase(no_pred.find(v));
         auto edges = _adj_lists.at(v);
         for ( auto &e : edges ) {
             nodename to = get<0>(e);
@@ -187,7 +193,6 @@ vector<digraph::nodename> digraph::topsort( ) const
                 no_pred.insert(to);
             }
         }
-        no_pred.erase(no_pred.find(v));
     }
     bool found = false;
     for ( auto a : reverse_adj_list )
@@ -261,7 +266,7 @@ int main( int argc, char *argv[] )
     digraph y(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds2,eds2+6));
     digraph z(set<digraph::nodename>(verts,verts+5),
-              vector<digraph::edge>(eds2,eds2+7));
+              vector<digraph::edge>(eds3,eds3+7));
 
     print_visit pv;
 
