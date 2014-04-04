@@ -2,6 +2,7 @@
 #include <memory>
 #include <ostream>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <deque>
 #include <string>
@@ -114,7 +115,6 @@ public:
   bool remove_car( const string &license );
   optional<parking_space> find_car( const string &license ) const;
   optional<car> find_occupant( char row, unsigned int no ) const;
-  void print_report(ostream &out) const;
 private:
   // stores all the parking spaces in a single row
   typedef map<char, vector<parking_space>> row_data;
@@ -129,15 +129,66 @@ private:
   static parking_space &get_space( const parking_space_ref &r )
     { return  (*get<0>(r))[get<1>(r)]; };
   parking_space_ref copy_ref( const parking_space_ref &r );
+  friend ostream & operator << (ostream & out, const parking_lot &p);
 };
+
+
 
 /**  Print out the argument to the specified ostream
      @param[in] p The parking_space to print */
 ostream & operator << (ostream & out, const parking_lot &p ) {
-  p.print_report(out);
-  return out;
+    out << "[";
+    auto &last_row_pair = *(--p.spaces_by_row.end());
+    for ( auto &mypair : p.spaces_by_row ) {
+        out << "{ Row " << get<0>(mypair) ;
+        for ( auto &space : get<1>(mypair) )  {
+            out << "( " << space.number << "<" << space.length.get_dist(dist::FOOT);
+            out << "\'," << space.width.get_dist(dist::FOOT) << "\'>: ";
+            if ( !space.occupant )  {
+                out << "empty )";
+            }  else  {
+                out << space.occupant.get().license_plate << " )";
+            }
+        }
+        out << "}";
+        if (&mypair==&last_row_pair)
+            out << "]";
+        out << endl;
+    }
+    return out;
 }
 
+
+/** Populate parking_lot data from stream input
+    @param[out] p The parking lot to populate   */
+istream & operator >> (istream & in, parking_lot & p)  {
+    char d; // used to read past delimiters
+    string row, license;
+    char row_name, next;
+    int no;
+    double w, l;
+    in >> d;    // read the opening '['
+    while (!in.eof())  {
+        if (']'==in.peek())  {
+            in >> d;
+        } else {
+            // read { >> 'Row'  >> row_name >> (
+            in >> d >> row >> row_name >> next;
+            while (next != '}')  {
+                // read space# >> '<' >> len >> ' >> , >> wid >> ' >> '>' >> ':'
+                in >> no >> d >> l >> d >> d >> w >> d >> d >> d;
+                // read lic# >> ) >> next delimiter, either ( or }
+                in >> license >> d >> next;
+                p.add_space( dist(dist::FOOT, w), dist(dist::FOOT,l), row_name, no );
+                // set occupant -- issue: need more info to construct a car()
+            }
+        }
+    }
+    in >> d;
+#ifdef DEBUG
+    cout << p;
+#endif
+}
 
 /** A function to swap two parking_lot objects
     @param[in,out] first The first parking_lot to swap
@@ -262,24 +313,6 @@ bool parking_lot::remove_car( const string &license )
   return true;
 }
 
-/** Prints a report
-    @param[in] out The stream to print the report to */
-void parking_lot::print_report(ostream &out) const
-{
-  out << endl << endl << "Parking Lot Report" << endl;
-  for ( auto &mypair : spaces_by_row ) {
-    out << "  Row " << get<0>(mypair) << endl;
-    for ( auto &space : get<1>(mypair) )  {
-      out << "    Space " << space.number << " : ";
-      if ( !space.occupant )  {
-        out << "empty" << endl;
-      }  else  {
-        out << space.occupant.get().license_plate << endl;
-      }
-    }
-  }
-  out << endl;
-}
 
 /**  Find the car the occupies a specific parking space
      @param[in] row  The row of the parking space
@@ -315,23 +348,31 @@ optional<parking_space> parking_lot::find_car( const string &license ) const {
 
 
 
-int main() {
-  parking_lot p;
-  dist w1(dist::METER, 2.45);
-  dist l1(dist::FOOT, 17.0);
-  dist w2(dist::METER, 2.6);
-  dist l2(dist::FOOT, 19.0);
-  dist w3(dist::METER, 2.7);
-  dist l3(dist::FOOT, 21.0);
-  car c1{ w1, l2, w1, string("PINOTNV") };
-  car c2{ w3, l2, w2, string("133ABD") };
-  car c3{ w1, l1, w1, string("166ABC") };
-  car c4{ w1, l2, w1, string("CU LTR") };
+int main(int argc, char *argv[]) {
 
-  p.add_space( w1, l1, 'A', 1 );
-  p.add_space( w1, l1, 'A', 2 );
-  p.add_to_row( w2, l2, 'B', 1, 4 );
-  p.add_to_row( w3, l3, 'C', 11, 4 );
+    dist w1(dist::METER, 2.45);
+    dist l1(dist::FOOT, 17.0);
+    dist w2(dist::METER, 2.6);
+    dist l2(dist::FOOT, 19.0);
+    dist w3(dist::METER, 2.7);
+    dist l3(dist::FOOT, 21.0);
+
+    car c1{ w1, l2, w1, string("PINOTNV") };
+    car c2{ w3, l2, w2, string("133ABD") };
+    car c3{ w1, l1, w1, string("166ABC") };
+    car c4{ w1, l2, w1, string("CU LTR") };
+
+    parking_lot p;
+    if (argc==1) {
+        p.add_space( w1, l1, 'A', 1 );
+        p.add_space( w1, l1, 'A', 2 );
+        p.add_to_row( w2, l2, 'B', 1, 4 );
+        p.add_to_row( w3, l3, 'C', 11, 4 );
+    } else {
+        ifstream f(argv[1]);
+        f >> p;
+    }
+
 
   cout << "Park 1 " <<  p.park_car(c1) << endl;
   cout << "Park 2 " <<  p.park_car(c2) << endl;
