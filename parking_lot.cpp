@@ -142,12 +142,13 @@ ostream & operator << (ostream & out, const parking_lot &p ) {
     for ( auto &mypair : p.spaces_by_row ) {
         out << "{ Row " << get<0>(mypair) ;
         for ( auto &space : get<1>(mypair) )  {
-            out << "( " << space.number << "<" << space.length.get_dist(dist::FOOT);
-            out << "\'," << space.width.get_dist(dist::FOOT) << "\'>: ";
+            out << "( " << space.number << "<"
+                << space.length.get_dist(dist::FOOT)
+                << "\'," << space.width.get_dist(dist::FOOT) << "\'>: ";
             if ( !space.occupant )  {
                 out << "empty )";
             }  else  {
-                out << space.occupant.get().license_plate << " )";
+                out << space.occupant->license_plate << " )";
             }
         }
         out << "}";
