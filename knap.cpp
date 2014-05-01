@@ -22,21 +22,21 @@ private:
 
 int Knapsack::packZeroOne(const vector<Item> &items)
 {
-    vector<vector<int>> mx;
-    mx.push_back(vector<int>(_capacity+1,0));  // set mx[0,k]=0 for all k
+    vector<int> mx_old(_capacity+1,0);
+    vector<int> mx_cur(_capacity+1,0);
     for (int i=1; i<=items.size(); ++i)  // 1-indexed since 0th entry is empty slot
     {
-        mx.push_back(vector<int>(_capacity+1,0));
         for (int j=0; j<_capacity+1; ++j)
         {
             if (items[i-1]._w > j) {
-                mx[i][j] = mx[i-1][j];
+                mx_cur[j] = mx_old[j];
             } else {
-                mx[i][j] = max(mx[i-1][j],items[i-1]._v+mx[i-1][j-items[i-1]._w]);
+                mx_cur[j] = max(mx_old[j],items[i-1]._v+mx_old[j-items[i-1]._w]);
             }
         }
+        mx_old = mx_cur;
     }
-    return mx[items.size()][_capacity];
+    return mx_cur[_capacity];
 }
 
 
