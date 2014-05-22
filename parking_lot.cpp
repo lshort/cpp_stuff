@@ -195,9 +195,10 @@ istream & operator >> (istream & in, parking_lot & p)  {
     @param[in,out] first The first parking_lot to swap
     @param[in,out] second The second parking lot to swap */
 void swap( parking_lot& first, parking_lot& second ) {
-  std::swap( first.spaces_by_row, second.spaces_by_row );
-  std::swap( first.license_plate_map, second.license_plate_map );
-  std::swap( first.available_spaces, second.available_spaces );
+    using std::swap;
+    std::swap( first.spaces_by_row, second.spaces_by_row );
+    std::swap( first.license_plate_map, second.license_plate_map );
+    std::swap( first.available_spaces, second.available_spaces );
 }
 
 /** The move constructor
