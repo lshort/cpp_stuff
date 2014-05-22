@@ -58,7 +58,8 @@ int main()
     string c("oup");
     string d("one");
     string e("all");
-    SuffixTree t1(a);
+    string f("foo");
+SuffixTree t1(a);
     SuffixTree t2(b);
     cout << t1.find(c) << endl;
     cout << t2.find(c) << endl;
@@ -66,6 +67,8 @@ int main()
     cout << t2.find(d) << endl;
     cout << t1.find(e) << endl;
     cout << t2.find(e) << endl;
+    cout << t1.find(f) << endl;
+    cout << t2.find(f) << endl;
 
 }
 
