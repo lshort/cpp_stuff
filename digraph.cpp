@@ -15,6 +15,7 @@
 #include <deque>
 #include <boost/heap/fibonacci_heap.hpp>
 #include <boost/optional/optional.hpp>
+#include <boost/proto/core.hpp>
 
 
 using namespace std;
@@ -24,7 +25,7 @@ using std::placeholders::_1;
 class digraph {
 public:
     typedef char nodename;
-    static constexpr nodename no_node = 0;
+    static const nodename no_node = 0;
     struct edge {
         nodename from;
         nodename to;
@@ -48,6 +49,7 @@ private:
     bool relaxAllEdges(unordered_map<nodename,nodename> &backPtr,
                        unordered_map<nodename,int> &cost, int infinity);
 };
+const digraph::nodename digraph::no_node;
 
 /**  Constructs a directed graph from lists of vertices and edges
      @param[in] vertices The <set> of vertices
@@ -278,7 +280,8 @@ ostream &operator<< (ostream &ostr, const Container<T> &xs)
 }
 
 
-/**  Prints out any container of any class, provided the class has operator <<
+/**  Prints out any associative container of any class, 
+     provided the contained class has an operator <<
      @param[in] ostr The output stream
      @param[in] xs The container
      @return Returns the output stream      */
@@ -314,6 +317,24 @@ struct print_visit {
     };
 };
 
+
+template<typename Lambda>
+auto expect_exception( const string &s, Lambda lambda, const set<string> &allow )
+//    void expect_exception( return_type (*fp) (params... args))
+{
+    try {
+        auto x = lambda();
+        if (allow.end()!=allow.find(s))
+            throw "failed to catch expected exception";
+        return x;
+    }
+    catch (...) {
+        if (allow.end()==allow.find(s))
+            throw "caught unexpect exception";
+    }
+}
+
+
 digraph::nodename verts[] = "ABCDE";
 
 digraph::edge eds[] = { {'A','B',2},{'A','E',1}
@@ -341,31 +362,46 @@ int main( int argc, char *argv[] )
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds3,eds3+7));
 
-    print_visit pv;
+    //    print_visit pv;
 
-    auto bfs_visit = std::bind( pv,
-                                "BFS", _1);
-    auto dfs_visit = std::bind( pv,
-                                "DFS", _1);
-    auto topsort_visit = std::bind( pv,
-                                    "Topsort", _1);
-    auto dijkstra_visit = std::bind( pv,
-                                    "Dijkstra", _1);
-    auto bellman_visit = std::bind(pv, "Bellman", _1);
+    //    auto bfs_visit = [] (auto xs) { print_xs("BFS", xs); };
+    /*
+      auto bfs_visit = std::bind( pv,
+      "BFS", _1);
+      auto dfs_visit = std::bind( pv,
+      "DFS", _1);
+      auto topsort_visit = std::bind( pv,
+      "Topsort", _1);
+      auto dijkstra_visit = std::bind( pv,
+      "Dijkstra", _1);
+      auto bellman_visit = std::bind(pv, "Bellman", _1);
     
-    auto some_tests = [&] (digraph &g, digraph::nodename source,
-                           digraph::nodename destination)
-        { cout << endl << "Testing a graph" << endl;
-          bfs_visit(g.bfs(source));
-          dfs_visit(g.dfs(source));
-          topsort_visit(g.topsort());
-          auto m = g.bellman_ford(source);
-          bellman_visit(get<0>(*m));
-          dijkstra_visit(g.dijkstra(source,destination)); };
+      auto some_tests = [&] (digraph &g, digraph::nodename source,
+      digraph::nodename destination)
+      { cout << endl << "Testing a graph" << endl;
+      bfs_visit(g.bfs(source));
+      dfs_visit(g.dfs(source));
+      topsort_visit(g.topsort());
+      //auto m = g.bellman_ford(source);
+      //bellman_visit(get<0>(*m));
+      dijkstra_visit(g.dijkstra(source,destination)); };
+    */
 
-    some_tests(y,'A','D');
-    some_tests(z,'A','D');
-    some_tests(x,'A','D');
+    auto print_xs = [] (const char* title, auto xs)
+        {   cout << title << " visiting " << xs << endl;  };
+
+    auto some_tests = [&]  (digraph &g, digraph::nodename source,
+                            digraph::nodename destination,
+                            const set<string> &  except_on )
+        {
+            cout << expect_exception( "BFS", [g, source] () { return g.bfs(source); }, except_on ) << endl;
+    //        bfs_visit(g.bfs(source));
+        };
+
+    set<string> none;
+    some_tests(y,'A','D', none);
+    some_tests(z,'A','D', none);
+    some_tests(x,'A','D', set<string>{"Topsort"});
 
     return 0;
 }
