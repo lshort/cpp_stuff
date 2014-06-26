@@ -317,23 +317,42 @@ struct print_visit {
     };
 };
 
-
-template<typename Lambda>
-auto expect_exception( const string &s, Lambda lambda, const set<string> &allow )
-//    void expect_exception( return_type (*fp) (params... args))
+/*
+template<typename ExeLambda, typename AllowExcLambda>
+auto expect_exception( ExeLambda exe_lambda, AllowExcLambda except_lambda )
+                       //                       OnExcLambda on_exc )
 {
     try {
-        auto x = lambda();
-        if (allow.end()!=allow.find(s))
+        auto x = exe_lambda();
+        if (except_lambda())
             throw "failed to catch expected exception";
         return x;
     }
     catch (...) {
-        if (allow.end()==allow.find(s))
+        if (!except_lambda())
             throw "caught unexpect exception";
+        auto y;
+        return y;
     }
 }
+*/
 
+template<typename ExeLambda, typename OnExcLambda, typename NoExcLambda>
+auto expect_exception( ExeLambda exe_lambda, bool expect_p,
+                       OnExcLambda exc_lambda, NoExcLambda no_exc_lambda)
+{
+    try {
+        auto x = exe_lambda();
+        if (expect_p)
+            throw "failed to catch expected exception";
+        return no_exc_lambda(x);
+    }
+    catch (...) {
+        if (!expect_p)
+            throw "caught unexpect exception";
+        return exc_lambda();
+    }
+}
 
 digraph::nodename verts[] = "ABCDE";
 
@@ -362,31 +381,6 @@ int main( int argc, char *argv[] )
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds3,eds3+7));
 
-    //    print_visit pv;
-
-    //    auto bfs_visit = [] (auto xs) { print_xs("BFS", xs); };
-    /*
-      auto bfs_visit = std::bind( pv,
-      "BFS", _1);
-      auto dfs_visit = std::bind( pv,
-      "DFS", _1);
-      auto topsort_visit = std::bind( pv,
-      "Topsort", _1);
-      auto dijkstra_visit = std::bind( pv,
-      "Dijkstra", _1);
-      auto bellman_visit = std::bind(pv, "Bellman", _1);
-    
-      auto some_tests = [&] (digraph &g, digraph::nodename source,
-      digraph::nodename destination)
-      { cout << endl << "Testing a graph" << endl;
-      bfs_visit(g.bfs(source));
-      dfs_visit(g.dfs(source));
-      topsort_visit(g.topsort());
-      //auto m = g.bellman_ford(source);
-      //bellman_visit(get<0>(*m));
-      dijkstra_visit(g.dijkstra(source,destination)); };
-    */
-
     auto print_xs = [] (const char* title, auto xs)
         {   cout << title << " visiting " << xs << endl;  };
 
@@ -394,8 +388,22 @@ int main( int argc, char *argv[] )
                             digraph::nodename destination,
                             const set<string> &  except_on )
         {
-            cout << expect_exception( "BFS", [g, source] () { return g.bfs(source); }, except_on ) << endl;
-    //        bfs_visit(g.bfs(source));
+            auto exc_test = [except_on] (string name)
+                { return except_on.end()!=except_on.find(name); };
+            auto exc_return = [] ()
+                { cout << "Caught Expected Exception" << endl; };
+            auto tst = [exc_test, exc_return] (string fcn, auto a)
+            {
+                auto normal_return = [fcn] (auto retval)
+                    { cout << fcn << " visiting " << retval << endl; };
+                expect_exception(a, exc_test(fcn), exc_return, normal_return );
+            };
+            tst("BFS", [g, source] () { return g.bfs(source); } );
+            tst("DFS", [g, source] () { return g.dfs(source); } );
+            tst("Topsort", [g] () { return g.topsort(); } );
+            tst("Dijkstra", [g, source, destination] () { return g.dijkstra(source, destination); } );
+            //auto m = g.bellman_ford(source);
+            //bellman_visit(get<0>(*m));
         };
 
     set<string> none;
