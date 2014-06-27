@@ -1,4 +1,4 @@
-/// graph.cpp
+/// digraph.cpp
 ///   some graph algorithms
 
 #include <functional>
@@ -16,6 +16,8 @@
 #include <boost/heap/fibonacci_heap.hpp>
 #include <boost/optional/optional.hpp>
 #include <boost/proto/core.hpp>
+#include "expect_exception.hpp"
+#include "container_stream.hpp"
 
 
 using namespace std;
@@ -37,18 +39,20 @@ public:
     vector<nodename> dfs( const nodename vertex ) const;
     vector<nodename> bfs( const nodename vertex ) const;
 
-    deque<nodename> dijkstra( const nodename origin, const nodename destination) const;
-    typedef pair<unordered_map<nodename,nodename>,unordered_map<nodename,int>> bestPaths;
-    typedef boost::optional<bestPaths> maybeBestPaths;
-    maybeBestPaths bellman_ford(nodename source);
-
+    deque<nodename> dijkstra( const nodename origin,
+                              const nodename destination) const;
     vector<nodename> topsort( ) const;
-    vector<digraph> scc() const;
+
+    typedef pair<unordered_map<nodename,nodename>,unordered_map<nodename,int>> bestPaths;
+    //    typedef pair<unordered_map<nodename,nodename>,unordered_map<nodename,int>> bestPaths;
+    typedef boost::optional<bestPaths> maybeBestPaths;
+    maybeBestPaths bellman_ford(nodename source) const;
+
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
     bool relaxAllEdges(unordered_map<nodename,nodename> &backPtr,
-                       unordered_map<nodename,int> &cost, int infinity);
+                       unordered_map<nodename,int> &cost, int infinity) const;
 };
 const digraph::nodename digraph::no_node;
 
@@ -183,19 +187,20 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
      @param[in] costs The cost list
      @return True if any edge was relaxed  */
 bool digraph::relaxAllEdges(unordered_map<nodename,nodename> &backPtr,
-                            unordered_map<nodename,int> &cost, int infinity)
+                            unordered_map<nodename,int> &cost, int infinity) const
 {
     bool retval = false;
     for (auto v : _vertices)  {
         int c = cost[v];
-        if ( c != infinity )
-            for ( auto &e : _adj_lists[v])  {
-                if ( c + get<0>(e) < cost[get<1>(e)]) {
-                    cost[get<1>(e)] = c + get<0>(e);
-                    backPtr[get<1>(e)] = v;
+        if ( c != infinity ) {
+            for ( const auto &e : _adj_lists.at(v))  {
+                if ( c + get<1>(e) < cost[get<0>(e)]) {
+                    cost[get<0>(e)] = c + get<1>(e);
+                    backPtr[get<0>(e)] = v;
                     retval = true;
                 }
             }
+        }
     }
     return retval;
 }
@@ -204,7 +209,7 @@ bool digraph::relaxAllEdges(unordered_map<nodename,nodename> &backPtr,
 /**  Finds shortest path, even with negative edge weights
      @param[in] source The source vertex
      @return A vector that holds the path  */
-digraph::maybeBestPaths  digraph::bellman_ford(digraph::nodename source )
+digraph::maybeBestPaths  digraph::bellman_ford(digraph::nodename source ) const
 {
     unordered_map<nodename, nodename> backPtr;
     unordered_map<nodename, int> cost;
@@ -264,138 +269,7 @@ vector<digraph::nodename> digraph::topsort( ) const
 }
 
 
-vector<digraph> digraph::scc() const 
-{
-    vector<digraph> retval;
-    stack<nodename> kosaraju_stack;
-    while (kosaraju_stack.size() < _vertices.size())  {
-        stack<nodename> dfs_stack;
-        nodename n = *_vertices.begin();
-        dfs_stack.push(n);
-        while (!dfs_stack.empty())  {
-            nodename v = dfs_stack.top();
-            dfs_stack.pop();
-            if (kosaraju_stack.end() == kosaraju_stack.find(v) ) {
-                kosaraju_stack.push_back(v);
-                for ( auto e : _adj_list[v] ) {
-                    dfs_stack.push_back(get<0>(e));
-                }
-            }
-            
-        }
-    }
-    digraph transpose = buildTranspose();
-    while (!kosajaru_stack.empty())  {
-        nodename n = kosajaru_stack.top();
-        stack<nodename> dfs_stack();
-        dfs_stack.push(n);
-        set<nodename> visited;
-        while(!dfs_stack.empty()) {
-            nodename v = dfs_stack.top();
-            if (dfs_stack.end()==dfs_stack.find(v)) {
-                visited.insert(v);
-                for (auto e : transpose._adj_list[v])
-                    dfs_stack.push_back(get<0>(e));
-            }
-        }
-        retval.push_back(buildSubGraph(visited));
-        removeFromStack(kosajaru_stack, visited);
-    }
-    return retval;
-}
 
-
-
-/**  Prints out any container of any class, provided the class has operator <<
-     @param[in] ostr The output stream
-     @param[in] xs The container
-     @return Returns the output stream      */
-template< typename T,
-          template<typename El,
-                   typename Alloc=std::allocator<El> > class Container >
-ostream &operator<< (ostream &ostr, const Container<T> &xs)
-{
-    ostr << "{ ";
-    for ( auto &x : xs )
-        ostr << x << ",";
-    ostr << " }";
-    return ostr;
-}
-
-
-/**  Prints out any associative container of any class, 
-     provided the contained class has an operator <<
-     @param[in] ostr The output stream
-     @param[in] xs The container
-     @return Returns the output stream      */
-template< typename T, typename T2,
-          template<typename El,
-                   typename Alloc=std::allocator<El> > class AssocContainer >
-ostream &operator<< (ostream &ostr, const AssocContainer<T, T2> &xs)
-{
-    ostr << "{ ";
-    for ( auto &x : xs )
-        ostr << "(" << get<0>(x) << ":" << get<1>(x) << ")" << ",";
-    ostr << " }";
-    return ostr;
-}
-
-
-/**  A glorified operator ().  Should be a lambda, but you can't bind a lambda
- */
-struct print_visit {
-    print_visit() {};
-    /** Prints out the visited nodes in order
-    @param[in] title The title of the print listing
-    @param[in] xs The container to print
-    @return void */
-    template< typename T,
-              template<typename El,
-                       typename Alloc=std::allocator<El> > class Container >
-    void operator () ( const char* title, const Container<T> &xs) const
-    {
-        cout << title << " visiting ";
-        cout << xs;
-        cout << endl;
-    };
-};
-
-/*
-template<typename ExeLambda, typename AllowExcLambda>
-auto expect_exception( ExeLambda exe_lambda, AllowExcLambda except_lambda )
-                       //                       OnExcLambda on_exc )
-{
-    try {
-        auto x = exe_lambda();
-        if (except_lambda())
-            throw "failed to catch expected exception";
-        return x;
-    }
-    catch (...) {
-        if (!except_lambda())
-            throw "caught unexpect exception";
-        auto y;
-        return y;
-    }
-}
-*/
-
-template<typename ExeLambda, typename OnExcLambda, typename NoExcLambda>
-auto expect_exception( ExeLambda exe_lambda, bool expect_p,
-                       OnExcLambda exc_lambda, NoExcLambda no_exc_lambda)
-{
-    try {
-        auto x = exe_lambda();
-        if (expect_p)
-            throw "failed to catch expected exception";
-        return no_exc_lambda(x);
-    }
-    catch (...) {
-        if (!expect_p)
-            throw "caught unexpect exception";
-        return exc_lambda();
-    }
-}
 
 digraph::nodename verts[] = "ABCDE";
 
@@ -424,10 +298,7 @@ int main( int argc, char *argv[] )
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds3,eds3+7));
 
-    auto print_xs = [] (const char* title, auto xs)
-        {   cout << title << " visiting " << xs << endl;  };
-
-    auto some_tests = [&]  (digraph &g, digraph::nodename source,
+    auto some_tests = []  (digraph &g, digraph::nodename source,
                             digraph::nodename destination,
                             const set<string> &  except_on )
         {
@@ -441,12 +312,15 @@ int main( int argc, char *argv[] )
                     { cout << fcn << " visiting " << retval << endl; };
                 expect_exception(a, exc_test(fcn), exc_return, normal_return );
             };
+
+            cout << endl << "=====> Beginning a test set" << endl;
             tst("BFS", [g, source] () { return g.bfs(source); } );
             tst("DFS", [g, source] () { return g.dfs(source); } );
             tst("Topsort", [g] () { return g.topsort(); } );
-            tst("Dijkstra", [g, source, destination] () { return g.dijkstra(source, destination); } );
-            //auto m = g.bellman_ford(source);
-            //bellman_visit(get<0>(*m));
+            tst("Dijkstra", [g, source, destination] ()
+                            { return g.dijkstra(source, destination); } );
+            tst("Bellman", [g, source] ()
+                           { return get<0>(g.bellman_ford(source).get()); } );
         };
 
     set<string> none;
@@ -454,5 +328,12 @@ int main( int argc, char *argv[] )
     some_tests(z,'A','D', none);
     some_tests(x,'A','D', set<string>{"Topsort"});
 
+#ifdef THROW_A
+    some_tests(z,'A','D', set<string>{"Topsort"});
+#endif
+#ifdef THROW_B
+    some_tests(x,'A','D', none);
+#endif
+    
     return 0;
 }
