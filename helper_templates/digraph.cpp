@@ -1,59 +1,16 @@
 /// digraph.cpp
 ///   some graph algorithms
 
-#include <functional>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <utility>
-#include <set>
-#include <deque>
-#include <iostream>
-#include <stack>
-#include <limits>
-#include <map>
-#include <deque>
 #include <boost/heap/fibonacci_heap.hpp>
-#include <boost/optional/optional.hpp>
-#include <boost/proto/core.hpp>
-#include "expect_exception.hpp"
-#include "container_stream.hpp"
-
+#include <limits>
+#include <stack>
+#include <map>
+#include "digraph.hpp"
 
 using namespace std;
 using std::placeholders::_1;
 
-/** Instances represent a directed graph; immutable once constructed    */
-class digraph {
-public:
-    typedef char nodename;
-    static const nodename no_node = 0;
-    struct edge {
-        nodename from;
-        nodename to;
-        int weight;
-    };
-    digraph( const set<nodename> &vertices,
-             const vector<edge> & edges );
 
-    vector<nodename> dfs( const nodename vertex ) const;
-    vector<nodename> bfs( const nodename vertex ) const;
-
-    deque<nodename> dijkstra( const nodename origin,
-                              const nodename destination) const;
-    vector<nodename> topsort( ) const;
-
-    typedef pair<unordered_map<nodename,nodename>,
-                 unordered_map<nodename,int>> bestPaths;
-    typedef boost::optional<bestPaths> maybeBestPaths;
-    maybeBestPaths bellman_ford(nodename source) const;
-
-private:
-    set<nodename> _vertices;
-    unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
-    bool relaxAllEdges(unordered_map<nodename,nodename> &backPtr,
-                       unordered_map<nodename,int> &cost, int infinity) const;
-};
 const digraph::nodename digraph::no_node;
 
 bool valid_edge( const digraph::edge &e, const set<digraph::nodename> vs )
@@ -270,77 +227,3 @@ vector<digraph::nodename> digraph::topsort( ) const
 
 
 
-
-digraph::nodename verts[] = "ABCDE";
-
-digraph::edge eds[] = { {'A','B',2},{'A','E',1}
-                        , {'B','C',3},{'B','A',2}
-                        , {'C','C',1},{'C','D',2}
-                        , {'D','E',0}
-                        , {'E','D',1},{'E','B',2} };
-
-digraph::edge eds2[] = { {'A','B',2},{'A','E',1}
-                         , {'B','C',3}
-                         , {'C','D',2}
-                         , {'E','D',1},{'E','B',2} };
-digraph::edge eds3[] = { {'A','B',2},{'A','E',1}
-                         , {'B','C',3},{'A','B',3}
-                         , {'C','D',2}
-                         , {'E','D',1},{'E','B',2} };
-
-
-void graph_tests(digraph &g, digraph::nodename source,
-                digraph::nodename destination, const set<string> & except_on )
-{
-    auto exc_test = [except_on] (string name)
-        { return except_on.end()!=except_on.find(name); };
-    auto exc_return = [] ()
-        { cout << "Caught Expected Exception" << endl; };
-    auto tst = [exc_test, exc_return] (string fcn, auto a)
-        {
-            auto normal_return = [fcn] (auto retval)
-            { cout << fcn << " visiting " << retval << endl; };
-            expect_exception(a, exc_test(fcn), exc_return, normal_return );
-        };
-
-    cout << endl << "=====> Beginning a test set" << endl;
-    tst("BFS", [g, source] () { return g.bfs(source); } );
-    tst("DFS", [g, source] () { return g.dfs(source); } );
-    tst("Topsort", [g] () { return g.topsort(); } );
-    tst("Dijkstra", [g, source, destination] ()
-        { return g.dijkstra(source, destination); } );
-    tst("Bellman", [g, source] ()
-        { return get<0>(g.bellman_ford(source).get()); } );
-};
-
-
-
-int main( int argc, char *argv[] )
-{
-
-    digraph x(set<digraph::nodename>(verts,verts+5),
-              vector<digraph::edge>(eds,eds+9));
-    digraph y(set<digraph::nodename>(verts,verts+5),
-              vector<digraph::edge>(eds2,eds2+6));
-    digraph z(set<digraph::nodename>(verts,verts+5),
-              vector<digraph::edge>(eds3,eds3+7));
-
-    set<string> none;
-    graph_tests(y,'A','D', none);
-    graph_tests(z,'A','D', none);
-    graph_tests(x,'A','D', set<string>{"Topsort"});
-
-    try {
-        graph_tests(z,'A','D', set<string>{"Topsort"});
-    }
-    catch (...) {
-        cout << "Caught Exception A" << endl;
-    };
-    try {
-        graph_tests(x,'A','D', none);
-    }
-    catch (...) {
-        cout << "Caught Exception B" << endl;
-    };
-    return 0;
-}
