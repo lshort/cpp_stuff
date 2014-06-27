@@ -1,31 +1,7 @@
 #include "digraph.cpp"
 
-digraph::nodename verts[] = "ABCDE";
 
-digraph::edge edges[] = { {'A','B',2},{'A','E',1}
-                        , {'B','C',3},{'B','A',2}
-                        , {'C','C',1},{'C','D',2}
-                        , {'D','E',0}
-                        , {'E','D',1},{'E','B',2} };
-
-digraph::edge edges2[] = { {'A','B',2},{'A','E',1}
-                         , {'B','C',3}
-                         , {'C','D',2}
-                         , {'E','D',1},{'E','B',2} };
-digraph::edge edges3[] = { {'A','B',2},{'A','E',1}
-                         , {'B','C',3},{'A','B',3}
-                         , {'C','D',2}
-                         , {'E','D',1},{'E','B',2} };
-
-digraph x(set<digraph::nodename>(verts,verts+5),
-          vector<digraph::edge>(edges,edges+9));
-digraph y(set<digraph::nodename>(verts,verts+5),
-          vector<digraph::edge>(edges2,edges2+6));
-digraph z(set<digraph::nodename>(verts,verts+5),
-          vector<digraph::edge>(edges3,edges3+7));
-
-
-void graph_tests(digraph &g, digraph::nodename source,
+void graph_tests(const digraph &g, digraph::nodename source,
                 digraph::nodename destination, const set<string> & except_on )
 {
     auto exc_return = [] ()
@@ -53,24 +29,44 @@ void graph_tests(digraph &g, digraph::nodename source,
 
 int main( int argc, char *argv[] )
 {
+    digraph::nodename verts[] = "ABCDE";
+
+    digraph::edge edges[] = { {'A','B',2},{'A','E',1}
+                              , {'B','C',3},{'B','A',2}
+                              , {'C','C',1},{'C','D',2}
+                              , {'D','E',0}
+                              , {'E','D',1},{'E','B',2} };
+
+    digraph::edge edges2[] = { {'A','B',2},{'A','E',1}
+                               , {'B','C',3}
+                               , {'C','D',2}
+                               , {'E','D',1},{'E','B',2} };
+    digraph::edge edges3[] = { {'A','B',2},{'A','E',1}
+                               , {'B','C',3},{'A','B',3}
+                               , {'C','D',2}
+                               , {'E','D',1},{'E','B',2} };
+
+    digraph x(set<digraph::nodename>(verts,verts+5),
+              vector<digraph::edge>(edges,edges+9));
+    digraph y(set<digraph::nodename>(verts,verts+5),
+              vector<digraph::edge>(edges2,edges2+6));
+    digraph z(set<digraph::nodename>(verts,verts+5),
+              vector<digraph::edge>(edges3,edges3+7));
+
 
     set<string> none;
     graph_tests(y,'A','D', none);
     graph_tests(z,'A','D', none);
     graph_tests(x,'A','D', set<string>{"Topsort"});
 
-    try {
-        graph_tests(z,'A','D', set<string>{"Topsort"});
-    }
-    catch (...) {
-        cout << "Caught Exception A" << endl;
-    };
-    
-    try {
-        graph_tests(x,'A','D', none);
-    }
-    catch (...) {
-        cout << "Caught Exception B" << endl;
-    };
+    auto fail1 = [z] () { graph_tests(z,'A','D', set<string>{"Topsort"});
+                          return 1; };
+    auto show_fail = [] () { cout << "Caught Expected Exception..." << endl; };
+    auto show_err = [] (int ignore) { cout << "Failed to Catch Exception!!!"; };
+    expect_exception(fail1, true, show_fail, show_err );
+
+    auto fail2 = [x, none] () { graph_tests(x,'A','D', none); return 1; };
+    expect_exception(fail2, true, show_fail, show_err );
+
     return 0;
 }
