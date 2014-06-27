@@ -43,8 +43,8 @@ public:
                               const nodename destination) const;
     vector<nodename> topsort( ) const;
 
-    typedef pair<unordered_map<nodename,nodename>,unordered_map<nodename,int>> bestPaths;
-    //    typedef pair<unordered_map<nodename,nodename>,unordered_map<nodename,int>> bestPaths;
+    typedef pair<unordered_map<nodename,nodename>,
+                 unordered_map<nodename,int>> bestPaths;
     typedef boost::optional<bestPaths> maybeBestPaths;
     maybeBestPaths bellman_ford(nodename source) const;
 
@@ -56,20 +56,24 @@ private:
 };
 const digraph::nodename digraph::no_node;
 
+bool valid_edge( const digraph::edge &e, const set<digraph::nodename> vs )
+{
+    return (vs.end() != vs.find(e.from) &&
+            vs.end() != vs.find(e.to) );
+}
+
 /**  Constructs a directed graph from lists of vertices and edges
      @param[in] vertices The <set> of vertices
      @param[in] edges The <vector> of edges     */
 digraph::digraph(const set<nodename> &vertices,
                  const vector<edge> & edges ) : _vertices(vertices)
 {
-    for ( auto &v : vertices )
+    for ( auto v : vertices )
         _adj_lists[v] = vector<pair<nodename,int>>();
     for ( auto &e : edges )  {
-        if ( vertices.end() != vertices.find(e.from) &&
-             vertices.end() != vertices.find(e.to) ) {
+        if ( valid_edge( e, vertices ) ) {
             _adj_lists[e.from].push_back(make_pair(e.to,e.weight));
         } else {
-            cout << e.from << " " << e.to << endl;
             throw ("Edge (" + to_string(e.from) + "," + to_string(e.to) +
                    ") has nonexistent vertex");
         }
@@ -91,7 +95,7 @@ vector<digraph::nodename> digraph::dfs( const nodename vertex ) const
         if ( V.end() == V.find(top))  {
             V.insert(top);
             retval.push_back(top);
-            for ( auto &p : _adj_lists.at(top) )  {
+            for ( const auto &p : _adj_lists.at(top) )  {
                 S.push(get<0>(p));
             }
         }
@@ -113,7 +117,7 @@ vector<digraph::nodename> digraph::bfs( const nodename vertex ) const
         nodename v = Q.front();
         Q.pop_front();
         retval.push_back(v);
-        for ( auto &p : _adj_lists.at(v) )  {
+        for ( const auto &p : _adj_lists.at(v) )  {
             nodename to = get<0>(p);
             if ( V.end() == V.find(to)) {
                 V.insert(to);
@@ -145,7 +149,7 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
     map<nodename,handle> handles;
     map<nodename,nodename> previous;
     int inf = numeric_limits<int>::min();  // fib_heap is a max-heap, so use min
-    for ( auto &v : _vertices ) {
+    for ( auto v : _vertices ) {
         int cost = (v==origin ? 0 : inf);
         handles[v] = PQ.push(make_pair(v, cost));
         previous[v] = no_node;
@@ -223,7 +227,7 @@ digraph::maybeBestPaths  digraph::bellman_ford(digraph::nodename source ) const
         bool ignore = relaxAllEdges(backPtr, cost, infinity);
     }
     if (relaxAllEdges(backPtr, cost, infinity))
-        return boost::optional<bestPaths>();
+        return boost::optional<bestPaths>();  // negative weight cycle
     return boost::optional<bestPaths>(make_pair(backPtr,cost));
 }
 
@@ -235,7 +239,7 @@ vector<digraph::nodename> digraph::topsort( ) const
     set<nodename> no_pred;
     vector<nodename> sorted;
     unordered_map<nodename,multiset<nodename>> reverse_adj_list;
-    for ( auto a : _adj_lists) {
+    for ( const auto &a : _adj_lists) {
         for ( auto e : a.second ) {
             nodename v = get<0>(e);
             reverse_adj_list[v].insert(a.first);
@@ -258,14 +262,10 @@ vector<digraph::nodename> digraph::topsort( ) const
             }
         }
     }
-    bool found = false;
-    for ( auto a : reverse_adj_list )
+    for ( const auto &a : reverse_adj_list )
         if ( !(a.second).empty() )
-            found = true;
-    if (found)
-        throw "Found a cycle in the graph";
-    else
-        return sorted;
+            throw "Found a cycle in the graph";
+    return sorted;
 }
 
 
