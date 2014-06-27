@@ -288,6 +288,33 @@ digraph::edge eds3[] = { {'A','B',2},{'A','E',1}
                          , {'C','D',2}
                          , {'E','D',1},{'E','B',2} };
 
+
+void graph_tests(digraph &g, digraph::nodename source,
+                digraph::nodename destination, const set<string> & except_on )
+{
+    auto exc_test = [except_on] (string name)
+        { return except_on.end()!=except_on.find(name); };
+    auto exc_return = [] ()
+        { cout << "Caught Expected Exception" << endl; };
+    auto tst = [exc_test, exc_return] (string fcn, auto a)
+        {
+            auto normal_return = [fcn] (auto retval)
+            { cout << fcn << " visiting " << retval << endl; };
+            expect_exception(a, exc_test(fcn), exc_return, normal_return );
+        };
+
+    cout << endl << "=====> Beginning a test set" << endl;
+    tst("BFS", [g, source] () { return g.bfs(source); } );
+    tst("DFS", [g, source] () { return g.dfs(source); } );
+    tst("Topsort", [g] () { return g.topsort(); } );
+    tst("Dijkstra", [g, source, destination] ()
+        { return g.dijkstra(source, destination); } );
+    tst("Bellman", [g, source] ()
+        { return get<0>(g.bellman_ford(source).get()); } );
+};
+
+
+
 int main( int argc, char *argv[] )
 {
 
@@ -298,42 +325,22 @@ int main( int argc, char *argv[] )
     digraph z(set<digraph::nodename>(verts,verts+5),
               vector<digraph::edge>(eds3,eds3+7));
 
-    auto some_tests = []  (digraph &g, digraph::nodename source,
-                            digraph::nodename destination,
-                            const set<string> &  except_on )
-        {
-            auto exc_test = [except_on] (string name)
-                { return except_on.end()!=except_on.find(name); };
-            auto exc_return = [] ()
-                { cout << "Caught Expected Exception" << endl; };
-            auto tst = [exc_test, exc_return] (string fcn, auto a)
-            {
-                auto normal_return = [fcn] (auto retval)
-                    { cout << fcn << " visiting " << retval << endl; };
-                expect_exception(a, exc_test(fcn), exc_return, normal_return );
-            };
-
-            cout << endl << "=====> Beginning a test set" << endl;
-            tst("BFS", [g, source] () { return g.bfs(source); } );
-            tst("DFS", [g, source] () { return g.dfs(source); } );
-            tst("Topsort", [g] () { return g.topsort(); } );
-            tst("Dijkstra", [g, source, destination] ()
-                            { return g.dijkstra(source, destination); } );
-            tst("Bellman", [g, source] ()
-                           { return get<0>(g.bellman_ford(source).get()); } );
-        };
-
     set<string> none;
-    some_tests(y,'A','D', none);
-    some_tests(z,'A','D', none);
-    some_tests(x,'A','D', set<string>{"Topsort"});
+    graph_tests(y,'A','D', none);
+    graph_tests(z,'A','D', none);
+    graph_tests(x,'A','D', set<string>{"Topsort"});
 
-#ifdef THROW_A
-    some_tests(z,'A','D', set<string>{"Topsort"});
-#endif
-#ifdef THROW_B
-    some_tests(x,'A','D', none);
-#endif
-    
+    try {
+        graph_tests(z,'A','D', set<string>{"Topsort"});
+    }
+    catch (...) {
+        cout << "Caught Exception A" << endl;
+    };
+    try {
+        graph_tests(x,'A','D', none);
+    }
+    catch (...) {
+        cout << "Caught Exception B" << endl;
+    };
     return 0;
 }
