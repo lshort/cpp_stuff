@@ -42,6 +42,7 @@ public:
     maybeBestPaths bellman_ford(nodename source);
 
     vector<nodename> topsort( ) const;
+    vector<digraph> scc() const;
 private:
     set<nodename> _vertices;
     unordered_map<nodename,vector<pair<nodename,int>>> _adj_lists;
@@ -259,6 +260,48 @@ vector<digraph::nodename> digraph::topsort( ) const
     else
         return sorted;
 }
+
+
+vector<digraph> digraph::scc() const 
+{
+    vector<digraph> retval;
+    stack<nodename> kosaraju_stack;
+    while (kosaraju_stack.size() < _vertices.size())  {
+        stack<nodename> dfs_stack;
+        nodename n = *_vertices.begin();
+        dfs_stack.push(n);
+        while (!dfs_stack.empty())  {
+            nodename v = dfs_stack.top();
+            dfs_stack.pop();
+            if (kosaraju_stack.end() == kosaraju_stack.find(v) ) {
+                kosaraju_stack.push_back(v);
+                for ( auto e : _adj_list[v] ) {
+                    dfs_stack.push_back(get<0>(e));
+                }
+            }
+            
+        }
+    }
+    digraph transpose = buildTranspose();
+    while (!kosajaru_stack.empty())  {
+        nodename n = kosajaru_stack.top();
+        stack<nodename> dfs_stack();
+        dfs_stack.push(n);
+        set<nodename> visited;
+        while(!dfs_stack.empty()) {
+            nodename v = dfs_stack.top();
+            if (dfs_stack.end()==dfs_stack.find(v)) {
+                visited.insert(v);
+                for (auto e : transpose._adj_list[v])
+                    dfs_stack.push_back(get<0>(e));
+            }
+        }
+        retval.push_back(buildSubGraph(visited));
+        removeFromStack(kosajaru_stack, visited);
+    }
+    return retval;
+}
+
 
 
 /**  Prints out any container of any class, provided the class has operator <<
