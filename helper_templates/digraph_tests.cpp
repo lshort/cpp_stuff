@@ -28,15 +28,15 @@ digraph z(set<digraph::nodename>(verts,verts+5),
 void graph_tests(digraph &g, digraph::nodename source,
                 digraph::nodename destination, const set<string> & except_on )
 {
-    auto exc_test = [except_on] (string name)
-        { return except_on.end()!=except_on.find(name); };
     auto exc_return = [] ()
         { cout << "Caught Expected Exception" << endl; };
-    auto tst = [exc_test, exc_return] (string fcn, auto a)
+    auto tst = [exc_return, except_on] (string fcn, auto a)
         {
+            auto exc_test = [except_on, fcn] ()
+                { return except_on.end()!=except_on.find(fcn); };
             auto normal_return = [fcn] (auto retval)
-            { cout << fcn << " visiting " << retval << endl; };
-            expect_exception(a, exc_test(fcn), exc_return, normal_return );
+                { cout << fcn << " visiting " << retval << endl; };
+            expect_exception_l(a, exc_test, exc_return, normal_return );
         };
 
     cout << endl << "=====> Beginning a test set" << endl;
