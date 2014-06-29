@@ -222,7 +222,7 @@ ostream &operator<< (ostream &ostr, const Container<T> &xs)
 }
 
 
-/**  A glorified operator ().  Should be a lambda, but you can't bind a lambda
+            ,/**  A glorified operator ().  Should be a lambda, but you can't bind a lambda
  */
 struct print_visit {
     print_visit() {};
