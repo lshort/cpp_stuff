@@ -13,24 +13,25 @@
       throws, it calls a different lambda.  Similarly if it is expected 
       not to throw and doesn't throw.  But if it is expect to throw and 
       doesn't, or vice versa, then it throws.  Got that?
-      @param[in] exe_lambda The test code to run; a lambda
-      @param[in] expect_p Do we expect this execution to throw
-      @param[in] exc_lambda Executed if expect_p is True and the
-                 exe_lambda threw
-      @param[in] no_exc_lambda Executed if expect_p is False and the
-                 exe_lambda didn't throw.  The return value of exe_lambda
-                 is passed as an argument to this lambda  
+      @param[in] exec_lambda The test code to execute; a lambda.
+      @param[in] expect_to_throw True if we expect to throw.
+      @param[in] throw_lambda Executed if expect_to_throw is True and the
+                 exec_lambda threw.  
+      @param[in] no_throw_lambda Executed if expect_to_throw is False and
+                 the exec_lambda didn't throw.  The return value of 
+                 exec_lambda is passed as an argument to this lambda.
       @return The result of exc_lambda or no_exc_lambda, whichever runs
       */
-template<typename ExeLambda, typename OnExcLambda, typename NoExcLambda>
-auto expect_exception( ExeLambda exe_lambda, bool expect_to_throw,
-                       OnExcLambda exc_lambda, NoExcLambda no_exc_lambda)
+template<typename ExecLambda, typename OnThrowLambda, typename NoThrowLambda>
+auto expect_exception( ExecLambda exec_lambda, bool expect_to_throw,
+                       OnThrowLambda throw_lambda, NoThrowLambda no_throw_lambda,
+                       decltype(throw_lambda()) expected_return_value)
 {
     bool threw;
-    decltype( exe_lambda() ) x;
-
+    decltype( exec_lambda() ) x;
+    
     try {
-        x = exe_lambda();
+        x = exec_lambda();
         threw = false;
     }
     catch (...) {
@@ -43,31 +44,28 @@ auto expect_exception( ExeLambda exe_lambda, bool expect_to_throw,
         else
             throw "caught unexpect exception";
     } else {
-        if (expect_to_throw)
-            return exc_lambda();
-        else
-            return no_exc_lambda(x);
+        if (expect_to_throw) {
+            return throw_lambda();
+        } else {
+            auto rval = no_throw_lambda(x);
+            if ( rval != expected_return_value )
+                throw "Unexpected Return Value!!!";
+            else
+                return rval;
+        }
     }
 }
 
 
-/**  
-     template<typename ExeLambda, typename AllowExcLambda>
-     auto expect_exception( ExeLambda exe_lambda, AllowExcLambda except_lambda )
-     //                       OnExcLambda on_exc )
-     {
-     try {
-     auto x = exe_lambda();
-     if (except_lambda())
-     throw "failed to catch expected exception";
-     return x;
-     }
-     catch (...) {
-     if (!except_lambda())
-     throw "caught unexpect exception";
-     auto y;
-     return y;
-     }
-     }
-*/
+template<typename ExecLambda, typename ExpectThrowLambda,
+         typename OnThrowLambda, typename NoThrowLambda>
+auto expect_exception_l( ExecLambda exec_lambda,
+                         ExpectThrowLambda expect_throw,
+                         OnThrowLambda throw_lambda,
+                         NoThrowLambda no_throw_lambda,
+                         decltype(throw_lambda()) expect)
+{
+    return expect_exception(exec_lambda, expect_throw(),
+                            throw_lambda, no_throw_lambda, expect);
+}
 
