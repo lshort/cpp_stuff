@@ -57,6 +57,18 @@ auto expect_exception( ExecLambda exec_lambda, bool expect_to_throw,
 }
 
 
+/**   This code simply calls expect_throw() to get a boolean value,
+      then calls expect_exception().  See that function for details.  
+      @param[in] exec_lambda The test code to execute; a lambda.
+      @param[in] expect_throw A lambda that evaluates to a boolean that 
+                 tells us if we should expect exec_lambda to throw.  
+      @param[in] throw_lambda Executed if expect_to_throw is True and the
+      exec_lambda threw.  
+      @param[in] no_throw_lambda Executed if expect_to_throw is False and
+      the exec_lambda didn't throw.  The return value of 
+      exec_lambda is passed as an argument to this lambda.
+      @return The result of exc_lambda or no_exc_lambda, whichever runs
+*/
 template<typename ExecLambda, typename ExpectThrowLambda,
          typename OnThrowLambda, typename NoThrowLambda>
 auto expect_exception_l( ExecLambda exec_lambda,
