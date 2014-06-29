@@ -17,7 +17,7 @@
 class digraph {
 public:
     typedef char nodename;
-    static const nodename no_node = 0;
+    static const nodename no_node = '-';
     struct edge {
         nodename from;
         nodename to;

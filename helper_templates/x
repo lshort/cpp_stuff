@@ -1,0 +1,31 @@
+
+=====> Beginning a test set
+BFS visiting {A,B,E,C,D,}
+DFS visiting {A,E,B,C,D,}
+Topsort visiting {A,E,B,C,D,}
+Dijkstra visiting {A,E,D,}
+Bellman visiting {(E:A),(D:E),(C:B),(B:A),(A:-),}
+
+=====> Beginning a test set
+BFS visiting {A,B,E,C,D,}
+DFS visiting {A,B,C,D,E,}
+Topsort visiting {A,E,B,C,D,}
+Dijkstra visiting {A,E,D,}
+Bellman visiting {(E:A),(D:E),(C:B),(B:A),(A:-),}
+
+=====> Beginning a test set
+BFS visiting {A,B,E,C,D,}
+DFS visiting {A,E,B,C,D,}
+Caught Expected Exception
+Dijkstra visiting {A,E,D,}
+Bellman visiting {(E:A),(D:E),(C:B),(B:A),(A:-),}
+
+=====> Beginning a test set
+BFS visiting {A,B,E,C,D,}
+DFS visiting {A,B,C,D,E,}
+Caught Expected Exception...
+
+=====> Beginning a test set
+BFS visiting {A,B,E,C,D,}
+DFS visiting {A,E,B,C,D,}
+Caught Expected Exception...

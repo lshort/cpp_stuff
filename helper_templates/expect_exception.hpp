@@ -24,11 +24,12 @@
       */
 template<typename ExecLambda, typename OnThrowLambda, typename NoThrowLambda>
 auto expect_exception( ExecLambda exec_lambda, bool expect_to_throw,
-                       OnThrowLambda exc_lambda, NoThrowLambda no_exc_lambda)
+                       OnThrowLambda throw_lambda, NoThrowLambda no_throw_lambda,
+                       decltype(throw_lambda()) expected_return_value)
 {
     bool threw;
     decltype( exec_lambda() ) x;
-
+    
     try {
         x = exec_lambda();
         threw = false;
@@ -43,10 +44,15 @@ auto expect_exception( ExecLambda exec_lambda, bool expect_to_throw,
         else
             throw "caught unexpect exception";
     } else {
-        if (expect_to_throw)
-            return exc_lambda();
-        else
-            return no_exc_lambda(x);
+        if (expect_to_throw) {
+            return throw_lambda();
+        } else {
+            auto rval = no_throw_lambda(x);
+            if ( rval != expected_return_value )
+                throw "Unexpected Return Value!!!";
+            else
+                return rval;
+        }
     }
 }
 
@@ -56,9 +62,10 @@ template<typename ExecLambda, typename ExpectThrowLambda,
 auto expect_exception_l( ExecLambda exec_lambda,
                          ExpectThrowLambda expect_throw,
                          OnThrowLambda throw_lambda,
-                         NoThrowLambda no_throw_lambda)
+                         NoThrowLambda no_throw_lambda,
+                         decltype(throw_lambda()) expect)
 {
     return expect_exception(exec_lambda, expect_throw(),
-                            throw_lambda, no_throw_lambda);
+                            throw_lambda, no_throw_lambda, expect);
 }
 
