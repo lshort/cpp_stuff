@@ -48,5 +48,6 @@ private:
     std::unordered_map<nodename,std::vector<std::pair<nodename,int>>> _adj_lists;
     bool relaxAllEdges(std::unordered_map<nodename,nodename> &backPtr,
                        std::unordered_map<nodename,int> &cost, int infinity) const;
+    bool valid_edge( const digraph::edge &e ) const;
 };
 

@@ -13,11 +13,11 @@ using std::placeholders::_1;
 
 const digraph::nodename digraph::no_node;
 
-bool valid_edge( const digraph::edge &e, const set<digraph::nodename> vs )
+bool digraph::valid_edge( const digraph::edge &e ) const 
 {
-    return (vs.end() != vs.find(e.from) &&
-            vs.end() != vs.find(e.to) );
-}
+    return (_vertices.end() != _vertices.find(e.from) &&
+            _vertices.end() != _vertices.find(e.to) );
+};
 
 /**  Constructs a directed graph from lists of vertices and edges
      @param[in] vertices The <set> of vertices
@@ -28,8 +28,8 @@ digraph::digraph(const set<nodename> &vertices,
     for ( auto v : vertices )
         _adj_lists[v] = vector<pair<nodename,int>>();
     for ( auto &e : edges )  {
-        if ( valid_edge( e, vertices ) ) {
-            _adj_lists[e.from].push_back(make_pair(e.to,e.weight));
+        if ( valid_edge(e) ) {
+            _adj_lists[e.from].emplace_back(make_pair(e.to,e.weight));
         } else {
             throw ("Edge (" + to_string(e.from) + "," + to_string(e.to) +
                    ") has nonexistent vertex");
