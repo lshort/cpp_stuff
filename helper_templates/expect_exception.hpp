@@ -20,6 +20,8 @@
       @param[in] no_throw_lambda Executed if expect_to_throw is False and
                  the exec_lambda didn't throw.  The return value of 
                  exec_lambda is passed as an argument to this lambda.
+      @param[in] expected_return_value The value returned by no_throw_lambda,
+                 if it is called.  
       @return The result of exc_lambda or no_exc_lambda, whichever runs
       */
 template<typename ExecLambda, typename OnThrowLambda, typename NoThrowLambda>
@@ -65,8 +67,10 @@ auto expect_exception( ExecLambda exec_lambda, bool expect_to_throw,
       @param[in] throw_lambda Executed if expect_to_throw is True and the
       exec_lambda threw.  
       @param[in] no_throw_lambda Executed if expect_to_throw is False and
-      the exec_lambda didn't throw.  The return value of 
-      exec_lambda is passed as an argument to this lambda.
+                 the exec_lambda didn't throw.  The return value of 
+                 exec_lambda is passed as an argument to this lambda.
+      @param[in] expected_return_value The value returned by no_throw_lambda,
+                 if it is called.  
       @return The result of exc_lambda or no_exc_lambda, whichever runs
 */
 template<typename ExecLambda, typename ExpectThrowLambda,
