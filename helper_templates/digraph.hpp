@@ -26,13 +26,18 @@ public:
     digraph( const std::set<nodename> &vertices,
              const std::vector<edge> & edges );
 
-    std::vector<nodename> dfs( const nodename vertex ) const;
+    //! depth first search 
+    std::vector<nodename> dfs( const nodename vertex ) const; 
+    //! breadth first search 
     std::vector<nodename> bfs( const nodename vertex ) const;
 
+    //! shortest path from origin to destination
     std::deque<nodename> dijkstra( const nodename origin,
                                    const nodename destination) const;
+    //! topological sort
     std::vector<nodename> topsort( ) const;
 
+    //! all-pairs shortest paths
     typedef std::pair<std::unordered_map<nodename,nodename>,
                       std::unordered_map<nodename,int>> bestPaths;
     typedef boost::optional<bestPaths> maybeBestPaths;
