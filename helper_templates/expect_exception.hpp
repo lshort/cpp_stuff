@@ -7,6 +7,9 @@
 ///      call exc_lambda).  But it is so much easier to compose lambdas
 ///      into tests this way -- look at the examples, you'll see.  
 
+#ifndef __EXPECT_EXCEPTION_H
+#define __EXPECT_EXCEPTION_H
+
 #include <iostream>
 
 /**   This code calls a lambda.  If the result is expected to throw and 
@@ -84,4 +87,6 @@ auto expect_exception_l( ExecLambda exec_lambda,
     return expect_exception(exec_lambda, expect_throw(),
                             throw_lambda, no_throw_lambda, expect);
 }
+
+#endif  // __EXPECT_EXCEPTION_H
 

@@ -3,6 +3,9 @@
 ///       faster than digraph.hpp, as it uses vectors whenever
 ///       possible
 
+#ifndef __FAST_DIGRAPH_H
+#define __FAST_DIGRAPH_H
+
 
 #include <functional>
 #include <unordered_map>
@@ -10,9 +13,9 @@
 #include <utility>
 #include <set>
 #include <deque>
+#include <iostream>
 #include <boost/optional/optional.hpp>
 #include "expect_exception.hpp"
-#include "container_stream.hpp"
 #include "vector_subrange.hpp"
 
 
@@ -79,3 +82,7 @@ private:
     const vectorSubrange<edge> &getAdjList(const nodename vertex) const;
 };
 
+extern std::ostream &operator<< (std::ostream &ostr,
+                                 const digraph::backPointer &p);
+
+#endif  // __FAST_DIGRAPH_H

@@ -6,12 +6,21 @@
 #include <stack>
 #include <map>
 #include "fast_digraph.hpp"
+#include "container_stream.hpp"
 
 using namespace std;
 using std::placeholders::_1;
 
 
 const digraph::nodename digraph::no_node;
+
+std::ostream &operator<< (std::ostream &ostr,
+                          const digraph::backPointer &p)
+{
+    ostr << p.vertex << "<-" << p.prev_vertex << "@" << p.cost;
+    return ostr;
+};
+
 
 bool valid_edge( const digraph::edge &e,
                  const set<digraph::nodename> &verts ) 
@@ -46,7 +55,7 @@ digraph::digraph(const set<nodename> &vertices,
         _verts.emplace_back(v);
         _idxs[v] = idx_count;
         int first = count;
-        int last = first;
+        int last = first-1;
         while (count<_edges.size() && v == _edges[count].from)  
             last = count++;
         _adjLists.emplace_back(vectorSubrange<edge>(_edges,first,last));
@@ -151,10 +160,8 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
     set<nodename> V;
     boost::heap::fibonacci_heap<heap_data> PQ;
     typedef boost::heap::fibonacci_heap<heap_data>::handle_type handle;
-    vector<handle> handles;   // indexed by _idxs
-    vector<nodename> previous; // indexed by _idxs
-    //    map<nodename,handle> handles;
-    //    map<nodename,nodename> previous;
+    vector<handle> handles(_verts.size());   // indexed by _idxs
+    vector<nodename> previous(_verts.size()); // same idxs
     int inf = numeric_limits<int>::min();  // fib_heap is a max-heap, so use min
     for ( auto v : _verts) {
         int cost = (v==origin ? 0 : inf);
@@ -185,7 +192,7 @@ deque<digraph::nodename> digraph::dijkstra( const nodename origin,
         nodename crnt = destination;
         while (crnt != origin) {
             rval.push_front(crnt);
-            crnt = previous[crnt];
+            crnt = previous[toIdx(crnt)];
         }
         rval.push_front(crnt);
     }
@@ -240,22 +247,24 @@ digraph::maybeBestPaths  digraph::bellman_ford(digraph::nodename source ) const
      @return Returns a <vector> of the ordered vertex names */
 vector<digraph::nodename> digraph::topsort( ) const
 {
-    set<nodename> no_pred(_verts.begin(),_verts.end());
+    set<nodename> no_pred;
     vector<nodename> sorted;
-    vector<multiset<nodename>> reverse_adj_list;
-    for ( const auto &e : _edges ) {
+    vector<multiset<nodename>> reverse_adj_list(_verts.size(),
+                                              multiset<nodename>());
+    for ( const auto &e : _edges ) 
         reverse_adj_list[toIdx(e.to)].insert(e.from);
-        no_pred.erase(no_pred.find(e.to)); // inefficient on dense graph
-    }
+    for ( auto v : _verts)
+        if ( reverse_adj_list[toIdx(v)].empty() )
+            no_pred.insert(v);
     while ( !no_pred.empty()) {
         nodename v = *no_pred.begin();
         sorted.push_back(v);
         no_pred.erase(no_pred.find(v));
         for ( auto &e : getAdjList(v) ) {
-            int to = toIdx(e.to);
-            reverse_adj_list[to].erase(reverse_adj_list[to].find(v));
-            if ( reverse_adj_list[to].empty() )  {
-                no_pred.insert(to);
+            int ti = toIdx(e.to);
+            reverse_adj_list[ti].erase(reverse_adj_list[ti].find(v));
+            if ( reverse_adj_list[ti].empty() )  {
+                no_pred.insert(e.to);
             }
         }
     }

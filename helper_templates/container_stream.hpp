@@ -1,6 +1,9 @@
 ///  container_stream.hpp
 ///      some templates for streaming containers
 
+#ifndef __CONTAINER_STREAM_H
+#define __CONTAINER_STREAM_H
+
 #include <iostream>
 #include <utility>
 #include <unordered_map>
@@ -59,4 +62,4 @@ std::ostream &operator<< (std::ostream &ostr,
 }
 
 
-
+#endif   //  __CONTAINER_STREAM_H

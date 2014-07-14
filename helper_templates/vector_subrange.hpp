@@ -1,3 +1,15 @@
+///  vector_subrange.h
+///     defines the vectorSubrange template, which allows you
+///     to define a subrange of a vector that you can iterate
+///     over, do iterator arithmetic on, etc. -- anything you
+///     can do to an iterator, you can do with a subrange, because
+///     a subrange is just a wrapper around a pair of actual
+///     iterators
+
+#ifndef __VECTOR_SUBRANGE_H
+#define __VECTOR_SUBRANGE_H
+
+
 #include <vector>
 
 
@@ -9,12 +21,16 @@ class vectorSubrange {
 public:
     vectorSubrange( std::vector<T> &data, int first, int last )
         : _data(data), _first(first), _last(last)
-    {  if (_last < _first) _last = _first;  };
+    {  if (_last < _first) _last = _first - 1;  };
 
     typedef typename std::vector<T>::iterator mutIt;
     friend mutIt begin (vectorSubrange &range)
         {  return range._data.begin() + range._first; };
     friend mutIt end (vectorSubrange &range)
+        { return range._data.begin() + range._last + 1; };
+    friend const mutIt begin (const vectorSubrange &range)
+        {  return range._data.begin() + range._first; };
+    friend const mutIt end (const vectorSubrange &range)
         { return range._data.begin() + range._last + 1; };
 private:
     std::vector<T> &_data;
@@ -42,4 +58,6 @@ private:
     int _first;
     int _last;
 };
+
+#endif  //  __VECTOR_SUBRANGE_H
 
