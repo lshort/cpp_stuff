@@ -33,7 +33,7 @@ bool double_equal( double a, double b,
                    unsigned int sig_figs = MAX_DBL_SIG_FIG )
 {
   int exponent = -min( (unsigned int)MAX_DBL_SIG_FIG, sig_figs );
-  double allowable_delta = a * pow( 10.0, exponent );
+  double allowable_delta = abs(a) * pow( 10.0, exponent );
   return ( abs(a-b) < allowable_delta );
 }
 
